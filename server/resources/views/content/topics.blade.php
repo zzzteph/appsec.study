@@ -16,7 +16,7 @@
 
 		<p><a class="button is-success" href="{{route('new-topic',['id' => $course->id])}}">Add new topic</a></p>
 
-	@endif
+		@endif
 	
 	
 <hr/>

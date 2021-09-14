@@ -12,55 +12,12 @@ class Topic extends Model
     {
         return $this->belongsTo(Course::class);
     }
-	public function lessons()
+	public function topic_nodes()
     {
-        return $this->hasMany(Lesson::class);
+        return $this->hasMany(TopicNode::class);
     }
-	
-	public function getLabLessonCountAttribute()
-    {
-		$count=0;
-      foreach($this->lessons as $lesson)
-	  {
-		  if($lesson->type=="lab" && $lesson->published==TRUE)$count++;
-	  }
-		return $count;
-    }
-	
-	public function getTheoryLessonCountAttribute()
-    {
-     
-	  $count=0;
-      foreach($this->lessons as $lesson)
-	  {
-		  if($lesson->type=="theory" && $lesson->published==TRUE)$count++;
-	  }
-		return $count;
-    }
-	
-	public function getTheoryLessonDoneCountAttribute()
-    {
-     
-	  $count=0;
-      foreach($this->lessons as $lesson)
-	  {
-		  if($lesson->type=="theory" &&$lesson->is_done && $lesson->published==TRUE)$count++;
-	  }
-		return $count;
-    }
-		public function getLabLessonDoneCountAttribute()
-    {
-     
-	  $count=0;
-      foreach($this->lessons as $lesson)
-	  {
-		  if($lesson->type=="lab" &&$lesson->is_done && $lesson->published==TRUE)$count++;
-	  }
-		return $count;
-    }
-	
-	
-	
+
+
 	
 	public function getIsDoneAttribute()
 	{

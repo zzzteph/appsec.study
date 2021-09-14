@@ -3,9 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+	<script href="{{asset('js/jquery.js')}}" type="text/javascript"></script>
     <link rel="stylesheet" href="{{asset('css/bulma.css')}}">
 	<link rel="stylesheet" href="{{asset('css/style.css')}}">
-	 <script href="{{asset('js/jquery.js')}}" type="text/javascript"></script>
+	 
 	 <script defer src="{{asset('fontawesome/js/all.js')}}" type="text/javascript"></script>
 	 <script src="{{asset('js/vue.js')}}" type="text/javascript"></script>
 	 <script src="{{asset('js/axios.min.js')}}" type="text/javascript"></script>
@@ -95,10 +96,16 @@
 	@if(Auth::user()->role==='admin')
       <div class="navbar-item has-dropdown is-hoverable">
         <a class="navbar-link">
-          Administration
+          Cloud
         </a>
 
+
+
+
         <div class="navbar-dropdown">
+
+
+		 <hr class="navbar-divider">
           <a class="navbar-item" href="{{route('cloud')}}">
             Cloud
           </a>
@@ -119,6 +126,39 @@
           </a>
         </div>
       </div>
+	
+	
+	
+	
+	      <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          CMS
+        </a>
+
+
+
+
+        <div class="navbar-dropdown">
+
+
+	       <a class="navbar-item" href="{{route('admin-view-lessons')}}">
+            Lessons lists
+          </a>	
+		 <a class="navbar-item" href="{{route('admin-view-courses')}}">
+           Courses
+          </a>	
+	
+	
+	
+	
+	
+
+        </div>
+      </div>
+	
+	
+	
+
 	
 	@endif
 @endauth

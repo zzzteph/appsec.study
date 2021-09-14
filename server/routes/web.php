@@ -16,6 +16,19 @@ use App\Http\Controllers\Web\StatisticsController;
 use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\UserVmsController;
 
+
+
+use App\Http\Controllers\Web\Admin\CoursesController as AdminCourse;
+use App\Http\Controllers\Web\Admin\TopicsController as AdminTopics;
+use App\Http\Controllers\Web\Admin\NodesController;
+
+
+
+use App\Http\Controllers\Web\Admin\LessonsController as AdminLesson;
+use App\Http\Controllers\Web\Admin\TheoryLessonController as AdminTheory;
+use App\Http\Controllers\Web\Admin\LabLessonController as AdminLabLesson;
+use App\Http\Controllers\Web\Admin\LabLessonQuestionController as AdminLessonLabLessonQuestion;
+
 use App\Http\Controllers\VerifyController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Password;
@@ -44,21 +57,29 @@ use App\Http\Middleware\AdminAccess;
 
 Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function () {
 
-	Route::get('/courses/new',[CoursesController::class, 'new'])->name('new-course');
-	Route::get('/courses/{course_id}',[CoursesController::class, 'edit'])->name('edit-course');
-	Route::post('/courses', [CoursesController::class, 'create'])->name('add-new-course');
-	Route::put('/courses/{course_id}', [CoursesController::class, 'update'])->name('update-course');
-	Route::delete('/courses/{course_id}', [CoursesController::class, 'delete'])->name('delete-course');
+    Route::get('/courses',[AdminCourse::class, 'list'])->name('admin-view-courses');
+	Route::get('/courses/new',[AdminCourse::class, 'new'])->name('admin-new-course');
+	Route::get('/courses/{id}',[AdminCourse::class, 'edit'])->name('admin-edit-course');
+	Route::post('/courses', [AdminCourse::class, 'create'])->name('admin-add-new-course');
+	Route::put('/courses/{id}', [AdminCourse::class, 'update'])->name('admin-update-course');
+	Route::delete('/courses/{id}', [AdminCourse::class, 'delete'])->name('admin-delete-course');
 
 
-	Route::get('/courses/{id}/topics', [TopicsController::class, 'new'])->name('new-topic');
-	Route::get('/courses/{course_id}/topics/{topic_id}',[TopicsController::class, 'edit'])->name('edit-topic');
-	Route::post('/courses/{course_id}/topics', [TopicsController::class, 'create'])->name('add-new-topic');
-	Route::put('/courses/{course_id}/topics/{topic_id}', [TopicsController::class, 'update'])->name('update-topic');
-	Route::put('/courses/{course_id}/topics/{topic_id}/increase', [TopicsController::class, 'increase'])->name('update-topic-order-increase');
-	Route::put('/courses/{course_id}/topics/{topic_id}/decrease', [TopicsController::class, 'decrease'])->name('update-topic-order-decrease');
-	Route::delete('/courses/{course_id}/topics/{topic_id}', [TopicsController::class, 'delete'])->name('delete-topic');
+	Route::get('/courses/{course_id}/topics', [AdminTopics::class, 'list'])->name('admin-list-topics');
+	Route::get('/courses/{course_id}/topics/new', [AdminTopics::class, 'new'])->name('admin-new-topic');
+	Route::get('/courses/{course_id}/topics/{topic_id}',[AdminTopics::class, 'edit'])->name('admin-edit-topic');
+	Route::post('/courses/{course_id}/topics', [AdminTopics::class, 'create'])->name('admin-add-new-topic');
+	Route::put('/courses/{course_id}/topics/{topic_id}', [AdminTopics::class, 'update'])->name('admin-update-topic');
+	Route::put('/courses/{course_id}/topics/{topic_id}/increase', [AdminTopics::class, 'increase'])->name('admin-update-topic-order-increase');
+	Route::put('/courses/{course_id}/topics/{topic_id}/decrease', [AdminTopics::class, 'decrease'])->name('admin-update-topic-order-decrease');
+	Route::delete('/courses/{course_id}/topics/{topic_id}', [AdminTopics::class, 'delete'])->name('admin-delete-topic');
 
+
+
+	//node controller
+	
+	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [NodesController::class, 'get'])->name('admin-nodes');
+	Route::put('courses/{course_id}/topics/{topic_id}/lessons', [NodesController::class, 'update'])->name('admin-nodes-update');
 
 
 
@@ -97,69 +118,67 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	Route::put('/user/{id}/reset', [UsersAdminController::class, 'reset'])->name('reset-user');
 	Route::delete('/user/{id}', [UsersAdminController::class, 'delete'])->name('delete-user');
 
-	//general lessons 
+	//general lessons administration
+	
+	Route::get('lessons', [AdminLesson::class, 'list'])->name('admin-view-lessons');
+	Route::get('lessons/{id}', [AdminLesson::class, 'view'])->name('admin-view-lesson');
+	Route::delete('lessons/{id}', [AdminLesson::class, 'delete'])->name('admin-delete-lesson');
 
-	Route::put('/courses/{course_id}/topics/{topic_id}/lesson/{lesson_id}/increase', [LessonsController::class, 'increase'])->name('update-lesson-order-increase');
-	Route::put('/courses/{course_id}/topics/{topic_id}/lesson/{lesson_id}/decrease', [LessonsController::class, 'decrease'])->name('update-lesson-order-decrease');
-	Route::delete('/courses/{course_id}/topics/{topic_id}/lesson/{lesson_id}', [LessonsController::class, 'delete'])->name('delete-lesson');
 
 	//admin theory lesson 
-	Route::get('/courses/{course_id}/topics/{topic_id}/theory', [TheoryLessonController::class, 'new'])->name('new-theory-lesson');
-	Route::get('/courses/{course_id}/topics/{topic_id}/theory/{lesson_id}',[TheoryLessonController::class, 'edit'])->name('edit-theory-lesson');
-	Route::post('/courses/{course_id}/topics/{topic_id}/theory', [TheoryLessonController::class, 'create'])->name('add-new-theory-lesson');
-	Route::put('/courses/{course_id}/topics/{topic_id}/theory/{lesson_id}', [TheoryLessonController::class, 'update'])->name('update-theory-lesson');
+	Route::get('lessons/theory', [AdminTheory::class, 'new'])->name('admin-new-theory-lesson');
+	Route::get('lessons/theory/{id}',[AdminTheory::class, 'edit'])->name('admin-edit-theory-lesson');
+	Route::post('lessons/theory', [AdminTheory::class, 'create'])->name('admin-add-new-theory-lesson');
+	Route::put('lessons/theory/{id}', [AdminTheory::class, 'update'])->name('admin-update-theory-lesson');
 
 	//admin practice lesson
-	Route::get('/courses/{course_id}/topics/{topic_id}/lab', [LabLessonController::class, 'new'])->name('new-lab-lesson');
-	Route::get('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}',[LabLessonController::class, 'edit'])->name('edit-lab-lesson');
-	Route::post('/courses/{course_id}/topics/{topic_id}/lab', [LabLessonController::class, 'create'])->name('add-new-lab-lesson');
-	Route::put('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}', [LabLessonController::class, 'update'])->name('update-lab-lesson');
+	Route::get('lessons/lab', [AdminLabLesson::class, 'new'])->name('admin-new-lab-lesson');
+	Route::get('lessons/lab/{id}',[AdminLabLesson::class, 'edit'])->name('admin-edit-lab-lesson');
+	Route::post('lessons/lab', [AdminLabLesson::class, 'create'])->name('admin-add-new-lab-lesson');
+	Route::put('lessons/lab/{id}', [AdminLabLesson::class, 'update'])->name('admin-update-lab-lesson');
+
+
+
 
 	//admin general delete
 	Route::delete('/courses/{course_id}/topics/{topic_id}/lesson/{lesson_id}', [LessonsController::class, 'delete'])->name('delete-lesson');
+	
+	
+	
 	//admin edit questions
-	Route::get('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions', [LabLessonQuestionController::class, 'list'])->name('list-lab-lesson-questions');
-	Route::get('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions/new', [LabLessonQuestionController::class, 'new'])->name('new-lab-lesson-questions');
-	Route::get('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions/{question_id}', [LabLessonQuestionController::class, 'edit'])->name('edit-lab-lesson-questions');
+	Route::get('lessons/lab/{id}/questions', [AdminLessonLabLessonQuestion::class, 'list'])->name('admin-list-lab-lesson-questions');
+	Route::get('lessons/lab/{id}/questions/new', [AdminLessonLabLessonQuestion::class, 'new'])->name('admin-new-lab-lesson-questions');
+	Route::get('lessons/lab/{id}/questions/{question_id}', [AdminLessonLabLessonQuestion::class, 'edit'])->name('admin-edit-lab-lesson-questions');
 
-	Route::post('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions', [LabLessonQuestionController::class, 'create'])->name('create-lab-lesson-questions');
+	Route::post('lessons/lab/{id}/questions', [AdminLessonLabLessonQuestion::class, 'create'])->name('admin-create-lab-lesson-questions');
 
-	Route::put('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions/{question_id}', [LabLessonQuestionController::class, 'update'])->name('update-lab-lesson-questions');
-	Route::delete('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions/{question_id}', [LabLessonQuestionController::class, 'delete'])->name('delete-lab-lesson-questions');
-	Route::put('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions/{question_id}/inc', [LabLessonQuestionController::class, 'increase'])->name('inc-order-lab-lesson-questions');
-	Route::put('/courses/{course_id}/topics/{topic_id}/lab/{lesson_id}/questions/{question_id}/dec', [LabLessonQuestionController::class, 'decrease'])->name('dec-order-lab-lesson-questions');
+	Route::put('lessons/lab/{id}/questions/{question_id}', [AdminLessonLabLessonQuestion::class, 'update'])->name('admin-update-lab-lesson-questions');
+	Route::delete('lessons/lab/{id}/questions/{question_id}', [AdminLessonLabLessonQuestion::class, 'delete'])->name('admin-delete-lab-lesson-questions');
+	Route::put('lessons/lab/{id}/questions/{question_id}/inc', [AdminLessonLabLessonQuestion::class, 'increase'])->name('admin-inc-order-lab-lesson-questions');
+	Route::put('lessons/lab/{id}/questions/{question_id}/dec', [AdminLessonLabLessonQuestion::class, 'decrease'])->name('admin-dec-order-lab-lesson-questions');
 
 
 });
 
 Route::middleware(['auth','verified'])->group(function () {
 	Route::get('courses', [CoursesController::class, 'list'])->name('courses');
-
 	Route::get('courses/{id}',[TopicsController::class, 'list'])->name('topics');
 	Route::get('courses/{id}/topics',[TopicsController::class, 'list'])->name('topics');
-
 	Route::get('courses/{course_id}/topics/{topic_id}', [LessonsController::class, 'list'])->name('lessons');
+	
 	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [LessonsController::class, 'list'])->name('lessons');
-
 	Route::get('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}', [LessonsController::class, 'view'])->name('view-lesson');
-
 	//actions
-	Route::put('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
+	Route::put('lessons/{id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
 	Route::post('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}', [LabLessonQuestionController::class, 'answer'])->name('question-answer');
-
 	//tasks
 	Route::post('/task/{lesson_id}', [TaskController::class, 'start'])->name('start-task');
 	Route::delete('/task/{lesson_id}', [TaskController::class, 'stop'])->name('stop-task');
-
-
 	//user vms
 
 	Route::post('/tools', [TaskController::class, 'tools_start'])->name('user-vm-start');
 	Route::delete('/tools', [TaskController::class, 'tools_stop'])->name('user-vm-stop');
-
 	//user pages
-
-	
 	Route::get('users/{id}/edit',[UsersController::class, 'edit'])->name('edit-user-page');
 	Route::put('users/{id}',[UsersController::class, 'update'])->name('update-user-page');
 

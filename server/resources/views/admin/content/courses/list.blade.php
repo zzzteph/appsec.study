@@ -9,6 +9,11 @@
 		  </ul>
 	</nav>
 	
+
+		<p><a class="button is-success" href={{route('admin-new-course')}}>Add new course</a></p>
+
+
+	
 	<hr/>
     </div>
 
@@ -31,7 +36,16 @@
   <div class="media-content">
     <div class="content">
       <p>
-       <strong class="is-size-4"><a href="{{route('topics',['id' => $course->id])}}">{{$course->name}}</a> </strong>
+       <strong class="is-size-4"><a href="{{route('admin-list-topics',['course_id' => $course->id])}}">{{$course->name}}</a> </strong>
+
+			@if ($course->published === 1)
+				<a class="button is-small is-success" href="#">published</a>
+			@else
+				<a class="button is-small is-danger" href="#">draft</a>
+			@endif
+			<a class="button is-small is-warning" href={{route('admin-edit-course',['id' => $course->id])}}>Edit</a>
+			
+
         <br>
         {{$course->description}}
       </p>

@@ -12,17 +12,11 @@ class Lesson extends Model
 	    protected static function booted()
     {
         static::created(function ($entry) {
-            $entry->order = Lesson::where('topic_id',$entry->topic_id)->max('order')+1;
-			$entry->save();
+         //   $entry->order = Lesson::where('topic_id',$entry->topic_id)->max('order')+1;
+		//	$entry->save();
         });
-    }
+	}
 
-	
-	
-	    public function topic()
-    {
-        return $this->belongsTo(Topic::class);
-    }
 	public function theory()
     {
         return $this->hasOne(TheoryLesson::class);
