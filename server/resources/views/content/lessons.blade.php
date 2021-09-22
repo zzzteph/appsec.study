@@ -59,7 +59,7 @@
       <p>
         <strong class="is-size-4">
 		@if($lesson->is_done || $lesson->is_opened)
-			<a href="{{route('view-lesson',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id'=>$lesson->id])}}">{{$lesson->name}}</a>
+			<a href="{{route('view-node',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id'=>$lesson->id])}}">{{$lesson->name}}</a>
 		@else
 			{{$lesson->name}}
 		@endif

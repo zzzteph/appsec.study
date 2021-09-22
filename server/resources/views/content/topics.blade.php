@@ -12,11 +12,6 @@
 	
 	<h1 class="title"> {{$course->name}} </h1>
 	
-		@if(Auth::user()->admin)
-
-		<p><a class="button is-success" href="{{route('new-topic',['id' => $course->id])}}">Add new topic</a></p>
-
-		@endif
 	
 	
 <hr/>
@@ -38,28 +33,13 @@
 @endif
  
 
-     <figure class="media-left">
-	 @if(Auth::user()->admin)
-   <form method="POST" action="{{route('update-topic-order-increase',['course_id' => $course->id,'topic_id' => $topic->id])}}">@method('PUT')@csrf<button class="button is-small is-success">+</button></form>
-				{{$topic->order}}
-			<form method="POST" action="{{route('update-topic-order-decrease',['course_id' => $course->id,'topic_id' => $topic->id])}}">@method('PUT')@csrf<button class="button is-small is-danger">-</button></form>
-			@endif
-  </figure>
+
    
    
   <div class="media-content">
     <div class="content">
       <p>
        <strong class="is-size-4"><a href="{{route('lessons',['course_id' => $course->id,'topic_id' => $topic->id])}}">{{$topic->name}}</a> </strong>
-		@if(Auth::user()->admin)
-			@if ($topic->published === 1)
-				<a class="button is-small is-success" href="#">published</a>
-			@else
-				<a class="button is-small is-danger" href="#">draft</a>
-			@endif
-			<a class="button is-small is-warning" href={{route('edit-topic',['course_id' => $course->id,'topic_id' => $topic->id])}}>Edit</a>
-			
-			@endif
         <br>
         {{$topic->description}}
       </p>

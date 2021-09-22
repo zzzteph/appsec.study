@@ -27,32 +27,8 @@ class Lesson extends Model
         return $this->hasOne(LabLesson::class);
     }
 
-	public function getIsDoneAttribute()
-	{
-		if($this->status=="done")return TRUE;
-		return FALSE;
-	}
-
-	public function getIsOpenedAttribute()
-	{
-	  $lessons = Lesson::where('topic_id',$this->topic_id)->orderBy('order', 'asc')->get();
-	  foreach( $lessons as $lesson)
-	  {
-		  if($lesson->id==$this->id)return TRUE;
-		  if($lesson->id!=$this->id && !$lesson->is_done)return FALSE;
-	  }
-	  return TRUE;
-	}
 
 
-
-	public function getStatusAttribute()
-    {
-		$userLesson=$this->hasOne(UserLesson::class)->where('user_id',Auth::user()->id)->first();
-		if($userLesson!=null)
-			return $userLesson->status;
-		return 'todo';
-    }
 
 public function getTypeAttribute()
 {
@@ -71,6 +47,7 @@ public function getTypeAttribute()
 
 	public function getProgressAttribute()
 	{
+		/*
 		if($this->hasMany(TheoryLesson::class)->count()>0)
 		{
 			if($this->status=='done')
@@ -86,7 +63,8 @@ public function getTypeAttribute()
 			else
 				return 0;
 		}
-		else 
+		else
+*/		
 			return 0;
 	}
 

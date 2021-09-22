@@ -11,11 +11,10 @@
 		  </ul>
 	</nav>
     </div>
-	</section>
-	 <section class="section">
+
 		 <div class="container">
 <h1 class="title">{{$lesson->theory->header}}
- @if($lesson->status=='done')
+ @if($node->status=='success' || $node->status=='fail' )
   <span class="icon has-text-success">
     <i class="fas fa-check"></i>
   </span>
@@ -35,7 +34,7 @@
 
  
  <hr/>
- @if($lesson->status!='done')
+ @if($node->status!='success' && $node->status!='fail')
 	 
  
   <form method="POST" action="{{route('mark-theory-as-read',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">

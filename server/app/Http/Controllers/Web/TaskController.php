@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Course;
 use App\Models\Topic;
+use App\Models\TopicNode;
+use App\Models\UserTopicNode;
 use App\Models\Lesson;
 use App\Models\TheoryLesson;
 use App\Models\LabLesson;
@@ -39,24 +41,30 @@ class TaskController extends Controller
 				$count+=$vm->updated_at->diffInSeconds($vm->created_at);
 		}
 
-//		if($count>6*3600)return FALSE;
+		if($count>6*3600)return FALSE;
 		return TRUE;
 	}
 
 
 
-	public function start(Request $request,$lesson_id)
+	public function start(Request $request,$node_id)
 	{
-
-		$lab_lesson = LabLesson::where('lesson_id',$lesson_id)->firstOrFail();
-		
-		if($lab_lesson->lesson->published==FALSE
-			||$lab_lesson->lesson->topic->published==FALSE
-			||$lab_lesson->lesson->topic->course->published==FALSE)
+		$node = TopicNode::where('id',$node_id)->firstOrFail();
+		$topic = Topic::where('id',$node->topic_id)->firstOrFail();
+		$lab_lesson = LabLesson::where('lesson_id',$node->lesson->id)->firstOrFail();
+		$hasAccess=false;
+		foreach($topic->user_route() as $route)
 		{
-			if(!Auth::user()->admin)
-				return redirect()->back()->withErrors('Task not found');
+			if($route->id==$node->id)$hasAccess=true;
 		}
+		if(!$topic->published)$hasAccess=false;
+		if(Auth::user()->admin)$hasAccess=true;
+		if(!$hasAccess)
+		{
+			return redirect()->back()->withErrors('You have no access to this lesson');
+		}
+		
+
 		$cloud=Cloud::where('type','yandex')->where('enabled',TRUE)->first();
 		if($cloud===null)
 		{
@@ -67,13 +75,7 @@ class TaskController extends Controller
 		{
 				return redirect()->back()->withErrors('You worked pretty hard. Please wait until tomorrow');
 		}
-		
-		if(Auth::user()->current_user_lab_vm()==null && !Auth::user()->admin && !$lab_lesson->lesson->is_opened)
-		{
-		 return back()->withErrors(['message' => 'You have no access to that lesson']);
-		}
-		
-		
+
 		
 		if(Auth::user()->current_user_lab_vm()==null)
 		{		
@@ -85,7 +87,7 @@ class TaskController extends Controller
 				$userLabVm=new UserCloudVm;
 				$userLabVm->user_id=Auth::user()->id;
 				$userLabVm->template_id=$lab_lesson->vm->template_id;
-				$userLabVm->lab_lesson_id=$lab_lesson->id;
+				$userLabVm->topic_node_id=$node->id;
 				$userLabVm->ip="";
 				$userLabVm->instance_id="";
 				$userLabVm->cloud_id=$cloud->id;
@@ -101,18 +103,26 @@ class TaskController extends Controller
 	}
 
 	
-	public function stop(Request $request,$lesson_id)
+	public function stop(Request $request,$node_id)
 	{
 
-		$lab_lesson = LabLesson::where('lesson_id',$lesson_id)->firstOrFail();
-		
-		if($lab_lesson->lesson->published==FALSE
-			||$lab_lesson->lesson->topic->published==FALSE
-			||$lab_lesson->lesson->topic->course->published==FALSE)
+
+		$node = TopicNode::where('id',$node_id)->firstOrFail();
+		$topic = Topic::where('id',$node->topic_id)->firstOrFail();
+		$lab_lesson = LabLesson::where('lesson_id',$node->lesson->id)->firstOrFail();
+		$hasAccess=false;
+		foreach($topic->user_route() as $route)
 		{
-			if(!Auth::user()->admin)
-				return redirect()->back()->withErrors('Task not found');
+			if($route->id==$node->id)$hasAccess=true;
 		}
+		if(!$topic->published)$hasAccess=false;
+		if(Auth::user()->admin)$hasAccess=true;
+		if(!$hasAccess)
+		{
+			return redirect()->back()->withErrors('You have no access to this lesson');
+		}
+		
+
 		
 		$userLabVm=Auth::user()->current_user_lab_vm();
 		if($userLabVm==null)
@@ -129,7 +139,6 @@ class TaskController extends Controller
 		$userLabVm->progress=100;
 		$userLabVm->save();
 		ActionStop::dispatch($userLabVm)->onQueue('yandex');
-		//ActionStop::dispatch($userLabVm);
 		return redirect()->back();
 		
 	}
@@ -164,7 +173,7 @@ class TaskController extends Controller
 			$userLabVm=new UserCloudVm;
 			$userLabVm->user_id=Auth::user()->id;
 			$userLabVm->template_id=$user_vm->template_id;
-			$userLabVm->lab_lesson_id=0;
+			$userLabVm->topic_node_id=0;
 			$userLabVm->ip="";
 			$userLabVm->instance_id="";
 			$userLabVm->cloud_id=$cloud->id;

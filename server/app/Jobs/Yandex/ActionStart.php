@@ -49,8 +49,11 @@ class ActionStart implements ShouldQueue
 		
 			$iamtoken = Iamtoken::where('cloud_id',$this->cloud->id)->first();
 		
-			$name="user-".$this->uservm->user_id."-".strtolower(Str::random(10));			
+			$name="user-".$this->uservm->user_id."-".strtolower(Str::random(10));		
+			
+		//	$info=new CreateInstance($this->cloud->folder_id,$name,,$this->uservm->template_id,$this->cloud->subnet_id,$this->cloud->zone_id,$this->cloud->platform_id,$iamtoken->id);//4294967296
 			$info=new CreateInstance($this->cloud->folder_id,$name,"13958643712",$this->uservm->template_id,$this->cloud->subnet_id,$this->cloud->zone_id,$this->cloud->platform_id,$iamtoken->id);//4294967296
+		
 			$response=$info->execute();
 			$this->response=$response;
 

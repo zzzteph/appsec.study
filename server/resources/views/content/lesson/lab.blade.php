@@ -20,7 +20,7 @@
 
 		 <div class="box is-shadowless">
 		<h1 class="title">{{$lesson->lab->name}}
- @if($lesson->status=='done')
+ @if($node->status=='success' || $node->status=='fail' )
   <span class="icon has-text-success">
     <i class="fas fa-check"></i>
   </span>
@@ -36,7 +36,7 @@
 
 	
 <div class="block">
-<form method="POST" action="{{route('start-task',['lesson_id' => $lesson->id])}}">
+<form method="POST" action="{{route('start-task',['node_id' => $node->id])}}">
 
 	@csrf
 		<div class="field">
@@ -59,7 +59,7 @@
 	</form>	
 </div>		
 
-		@elseif(!is_null($task) && ($task->lab_lesson_id==$lesson->lab->id) &&  ($task->status=='todo'||$task->status=='starting'||$task->status=='tostop'||$task->status=='stopping'))
+		@elseif(!is_null($task) && ($task->topic_node_id==$node->id) &&  ($task->status=='todo'||$task->status=='starting'||$task->status=='tostop'||$task->status=='stopping'))
 	 <div  id="app" class="block">
 			  
 			  
@@ -72,7 +72,7 @@
 	</div>
 	
 	
-	@elseif(!is_null($task) && ($task->lab_lesson_id==$lesson->lab->id) &&  ($task->status=='running'))
+	@elseif(!is_null($task) && ($task->topic_node_id==$node->id) &&  ($task->status=='running'))
 	 <div class="block" id="app">
 
 	@if($lesson->lab->vm->type=='code')
@@ -85,7 +85,7 @@
 	</div>
 	</div>
 <div class="block">
-		<form method="POST" action="{{route('stop-task',['lesson_id' => $lesson->id])}}">
+		<form method="POST" action="{{route('stop-task',['node_id' => $node->id])}}">
 		@method('DELETE')
 	@csrf
 		<div class="field">
@@ -110,7 +110,7 @@
 	
 	@else
 	 <div class="block">	
-	<form method="POST" action="{{route('start-task',['lesson_id' => $lesson->id])}}">
+	<form method="POST" action="{{route('start-task',['node_id' => $node->id])}}">
 	@csrf
 		<div class="field">
   <div class="control">
@@ -214,7 +214,7 @@
     </section>
 	
 	
-	@if(!is_null($task) && ($task->lab_lesson_id==$lesson->lab->id) &&  ($task->status=='todo' || $task->status=='starting' || $task->status=='tostop' || $task->status=='stopping'))
+	@if(!is_null($task) && ($task->topic_node_id==$node->id) &&  ($task->status=='todo' || $task->status=='starting' || $task->status=='tostop' || $task->status=='stopping'))
 	
 	
 	

@@ -34,13 +34,14 @@ class UserCloudVm extends Model
         });
     }
 
-	public function lesson()
-    {
-		return LabLesson::find($this->lab_lesson_id)->lesson;
+	public function node()
+    {		
+		return TopicNode::find($this->topic_node_id);
     }
 
 	public function getSizeAttribute()
     {
+		
 		return LabLesson::find($this->lab_lesson_id)->vm->vm_config->size;
     }
 

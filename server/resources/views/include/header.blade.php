@@ -192,9 +192,9 @@
 	@if(!is_null(Auth::user()->current_user_lab_vm()) && Auth::user()->current_user_lab_vm()->status=="running")
 
 		  <a id="timer" class="button is-success is-size-5" href="{{route('view-lesson',[
-		  'course_id'=>Auth::user()->current_user_lab_vm()->lesson()->topic->course->id,
-		  'topic_id'=>Auth::user()->current_user_lab_vm()->lesson()->topic->id,
-		  'lesson_id'=>Auth::user()->current_user_lab_vm()->lesson()->id
+		  'course_id'=>Auth::user()->current_user_lab_vm()->node()->topic->course->id,
+		  'topic_id'=>Auth::user()->current_user_lab_vm()->node()->topic->id,
+		  'node_id'=>Auth::user()->current_user_lab_vm()->node()->node_id
 		  ])}}">
 			
 <span class="icon-text">

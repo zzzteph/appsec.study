@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\LessonsController;
 use App\Http\Controllers\Web\TheoryLessonController;
 use App\Http\Controllers\Web\LabLessonController;
 use App\Http\Controllers\Web\LabLessonQuestionController;
+use App\Http\Controllers\Web\NodesController;
 use App\Http\Controllers\Web\CloudController;
 use App\Http\Controllers\Web\UsersAdminController;
 use App\Http\Controllers\Web\VmsController;
@@ -17,13 +18,10 @@ use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\UserVmsController;
 
 
-
+ 
 use App\Http\Controllers\Web\Admin\CoursesController as AdminCourse;
 use App\Http\Controllers\Web\Admin\TopicsController as AdminTopics;
-use App\Http\Controllers\Web\Admin\NodesController;
-
-
-
+use App\Http\Controllers\Web\Admin\NodesController as AdminNodes;
 use App\Http\Controllers\Web\Admin\LessonsController as AdminLesson;
 use App\Http\Controllers\Web\Admin\TheoryLessonController as AdminTheory;
 use App\Http\Controllers\Web\Admin\LabLessonController as AdminLabLesson;
@@ -78,8 +76,8 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 
 	//node controller
 	
-	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [NodesController::class, 'get'])->name('admin-nodes');
-	Route::put('courses/{course_id}/topics/{topic_id}/lessons', [NodesController::class, 'update'])->name('admin-nodes-update');
+	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [AdminNodes::class, 'get'])->name('admin-nodes');
+	Route::put('courses/{course_id}/topics/{topic_id}/lessons', [AdminNodes::class, 'update'])->name('admin-nodes-update');
 
 
 
@@ -164,16 +162,18 @@ Route::middleware(['auth','verified'])->group(function () {
 	Route::get('courses', [CoursesController::class, 'list'])->name('courses');
 	Route::get('courses/{id}',[TopicsController::class, 'list'])->name('topics');
 	Route::get('courses/{id}/topics',[TopicsController::class, 'list'])->name('topics');
-	Route::get('courses/{course_id}/topics/{topic_id}', [LessonsController::class, 'list'])->name('lessons');
+	Route::get('courses/{course_id}/topics/{topic_id}', [NodesController::class, 'list'])->name('lessons');
 	
-	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [LessonsController::class, 'list'])->name('lessons');
-	Route::get('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}', [LessonsController::class, 'view'])->name('view-lesson');
-	//actions
-	Route::put('lessons/{id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
+	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [NodesController::class, 'list'])->name('lessons');
+
+	Route::get('courses/{course_id}/topics/{topic_id}/lessons/{node_id}', [NodesController::class, 'view'])->name('view-lesson');
+	
+//actions
+	Route::put('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
 	Route::post('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}', [LabLessonQuestionController::class, 'answer'])->name('question-answer');
 	//tasks
-	Route::post('/task/{lesson_id}', [TaskController::class, 'start'])->name('start-task');
-	Route::delete('/task/{lesson_id}', [TaskController::class, 'stop'])->name('stop-task');
+	Route::post('/task/{node_id}', [TaskController::class, 'start'])->name('start-task');
+	Route::delete('/task/{node_id}', [TaskController::class, 'stop'])->name('stop-task');
 	//user vms
 
 	Route::post('/tools', [TaskController::class, 'tools_start'])->name('user-vm-start');

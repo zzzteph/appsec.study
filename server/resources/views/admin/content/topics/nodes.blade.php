@@ -17,7 +17,7 @@
 	
 
 
-<form method="POST" action="{{route('admin-update-topic',['course_id' => $course->id,'topic_id' => $topic->id])}}">
+<form method="POST" action="{{route('admin-nodes-update',['course_id' => $course->id,'topic_id' => $topic->id])}}">
   @method('PUT')
   @csrf
 
@@ -31,15 +31,16 @@
   <div class="control">
  
 <textarea class="textarea" placeholder="Textarea" name="nodes" id="nodes">
-{
-"nodes":
+
  [
-{"id":1,"content":"2"},
-{"id":2,"content":"2"},
-{"id":3,"content":"2"},
-{"id":4,"content":"2"}
+ @foreach ($topic->topic_nodes as $node)
+{"id":{{$node->node_id}},"lesson":"{{$node->lesson_id}}"}
+   @if (!$loop->last)
+   ,
+   @endif
+@endforeach
  ]
-}
+
 
 
 </textarea>
@@ -53,11 +54,24 @@
   <div class="control">
  
 <textarea class="textarea" placeholder="Textarea" name="routes" id="routes">
-{
-"routes":[
-{"from":1,"to":2,"condition":true}
-]
-}
+
+
+ [
+ @foreach ($topic->topic_routes() as $route)
+ 
+
+		{"from":{{$route->from_node->node_id}},"to":{{$route->to_node->node_id}},"condition":"{{$route->condition}}"}
+		@if (!$loop->last )
+		,
+		@endif
+   
+
+@endforeach
+ ]
+
+
+
+
 
 
 </textarea>
@@ -164,17 +178,17 @@ var graph="";
  try {
 	nodes=JSON.parse(document.getElementById('nodes').value);
 routes=JSON.parse(document.getElementById('routes').value);
-	for (var i = 0; i < nodes.nodes.length; i++) {
-   graph+=nodes.nodes[i].id+' [shape='+getLessonType(nodes.nodes[i].content)+',label="'+getLessonName(nodes.nodes[i].content)+'"];\n';
+	for (var i = 0; i < nodes.length; i++) {
+   graph+=nodes[i].id+' [shape='+getLessonType(nodes[i].lesson)+',label="'+getLessonName(nodes[i].lesson)+'"];\n';
 
 }
 
 
-	for (var i = 0; i < routes.routes.length; i++) {
-		if(routes.routes[i].condition==false)
-   graph+=routes.routes[i].from+'->'+routes.routes[i].to+ ' [color=red];\n';
+	for (var i = 0; i < routes.length; i++) {
+		if(routes[i].condition=='fail')
+   graph+=routes[i].from+'->'+routes[i].to+ ' [color=red];\n';
 else
-    graph+=routes.routes[i].from+'->'+routes.routes[i].to+ ' [color=green];\n';
+    graph+=routes[i].from+'->'+routes[i].to+ ' [color=green];\n';
 
 }
 	 } catch(e) {
