@@ -42,7 +42,7 @@ class TheoryLessonController extends Controller
 		}
 		$userTopicNode->status='success';
 		$userTopicNode->save();
-			return redirect()->route('view-lesson', ['course_id' => $course_id,'topic_id' => $topic_id,'lesson_id' => $lesson_id]);
+			return redirect()->route('view-lesson', ['course_id' => $course_id,'topic_id' => $topic_id,'node_id' => $node->node_id]);
     }
 
 

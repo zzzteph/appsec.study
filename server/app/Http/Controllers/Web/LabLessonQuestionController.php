@@ -92,7 +92,7 @@ class LabLessonQuestionController extends Controller
 			}
 		}
 		
-		if($question->type=='repeat')
+		if($question->type=='repeat' || $question->type=='vuln')
 		{
 			foreach($question->left_answers() as $answer)
 			{
@@ -134,7 +134,7 @@ class LabLessonQuestionController extends Controller
 				break;
 			}
 		}	
-		if($all_correct)$userNode->status='done';
+		if($all_correct)$userNode->status='success';
 		$userNode->save();
 	
 		return redirect()->back()->with('success', 'You are right!');   

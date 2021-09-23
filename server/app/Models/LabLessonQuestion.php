@@ -58,7 +58,10 @@ class LabLessonQuestion extends Model
 	}
 	
 
-	
+	public function user_answers()
+	{
+		return $this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->get();
+	}
 	
 	
 	
@@ -67,17 +70,22 @@ class LabLessonQuestion extends Model
 	
 	public function getCorrectAttribute()
     {
-       	$userQuestions=$this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->first();
+       	$userAnswers=$this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->first();
 		
-		if($userQuestions!=null)
+		if($this->type=="yes" || $this->type=="string")
 		{
-			if($this->type=="yes")return TRUE;
-			if($this->type=="string")return TRUE;
-			if($this->type=="vuln" || $this->type=="repeat")
-			{
-				
-			}
+			if($userAnswers!=null)return TRUE;
+			return FALSE;
 		}
+	
+		$correctUserAnswersCount=$this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->count();
+		$totalAnswers=$this->answers()->count();
+		if($this->type=="vuln" || $this->type=="repeat")
+		{
+			if($totalAnswers==$correctUserAnswersCount)return TRUE;
+		}
+		
+		
 		return FALSE;
     }
  

@@ -165,7 +165,7 @@
 				  @if( $question->type=='string') 
 				 <p><strong>{{$question->answer->answer}}</strong></p>
 			   @elseif( $question->type=='repeat' || $question->type=='vuln')
-				@foreach($question->answers as $answer)
+				@foreach($question->user_answers() as $answer)
 				<li>{{$answer->answer}}</li>
 			@endforeach
 
@@ -180,6 +180,14 @@
 			  <div class="control">
 				 {!! $question->question !!}
 				 </div><br/>
+				 @if( $question->type=='repeat' || $question->type=='vuln')
+					 <ul>
+				 				@foreach($question->user_answers() as $answer)
+				<li>{{$answer->answer}}</li>
+			@endforeach
+			</ul>
+				 @endif
+				 
 				  @if( $question->type!='yes') 
 				  <div class="control">
 					<input class="input" type="text" name="answer" placeholder="Text input">
