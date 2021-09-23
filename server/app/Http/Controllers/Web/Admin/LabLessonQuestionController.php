@@ -10,6 +10,8 @@ use App\Models\Topic;
 use App\Models\Lesson;
 use App\Models\LabLesson;
 use App\Models\LabLessonQuestion;
+use App\Models\LabLessonQuestionAnswer;
+
 use App\Models\UserLesson;
 use App\Models\UserLabLessonQuestion;
 use Illuminate\Support\Facades\Storage;
@@ -36,19 +38,37 @@ class LabLessonQuestionController extends Controller
 	{
 		
 		$validated = $request->validate([
-			'question' => 'required',
-			'answer' => 'required',
+			'content' => 'required',
+			'type' => 'required',
 			'score' => 'required',
 		]);
 		$labLesson=LabLesson::where('lesson_id', $id)->firstOrFail();
 		
 		$question=new LabLessonQuestion; 
-		$question->answer=$request->input('answer');
-		$question->question=$request->input('question');
+	
+		$question->question=$request->input('content');
 		$question->score=intval($request->input('score'));
-		$question->type='string';
-		
+		$question->type=$request->input('type');
 		$labLesson->questions()->save($question);
+
+		if($request->input('type')=="string")
+		{
+			$answer=new LabLessonQuestionAnswer;
+			$answer->lab_lesson_question_id=$question->id;
+			$answer->answer=$request->input('answer');
+			$answer->save();
+		}
+		else if($request->input('type')=="repeat" || $question->type=="vuln")
+		{
+			foreach($request->input('answers') as $userAnswer)
+			{
+				$answer=new LabLessonQuestionAnswer;
+				$answer->lab_lesson_question_id=$question->id;
+				$answer->answer=$userAnswer;
+				$answer->save();
+			}
+		}
+
 
 		return redirect()->route('admin-list-lab-lesson-questions',['id' =>$id]);
 	}
@@ -98,18 +118,35 @@ class LabLessonQuestionController extends Controller
 	{
 		$question=LabLessonQuestion::findOrFail($question_id);
 		$validated = $request->validate([
-			'question' => 'required',
-			'answer' => 'required',
+			'content' => 'required',
 			'score' => 'required',
 		]);
 
-		$question->answer=$request->input('answer');
-		$question->question=$request->input('question');
+		$question->question=$request->input('content');
 		$question->score=intval($request->input('score'));
-		$question->type='string';
-		
 		$question->save();
+	
+	
+		if($question->type=="string")
+		{
+			$answer=LabLessonQuestionAnswer::where('lab_lesson_question_id',$question->id)->first();
+			$answer->answer=$request->input('answer');
+			$answer->save();
+		}
+		else if($question->type=="repeat" || $question->type=="vuln")
+		{
+			LabLessonQuestionAnswer::where('lab_lesson_question_id',$question->id)->delete();
+			foreach($request->input('answers') as $userAnswer)
+			{
+				$answer=new LabLessonQuestionAnswer;
+				$answer->lab_lesson_question_id=$question->id;
+				$answer->answer=$userAnswer;
+				$answer->save();
+			}
+		}
 
+	
+	
 		return redirect()->route('admin-list-lab-lesson-questions', ['id' =>$id]);
 
 	}

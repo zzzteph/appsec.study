@@ -17,7 +17,7 @@
 
 
 @foreach ($lesson->questions as $question)
-   
+
  
 <article class="media box ">
   <figure class="media-left">
@@ -26,9 +26,13 @@
   <span class="icon-text is-align-items-center">
   <span class="icon is-large">
   @if($question->type=="string")
-    <i class="fas fa-question fa-lg"></i>
-	@else
-	 <i class="fas fa-meh-blank fa-lg"></i>
+    <i class="fas fa-question"></i>
+	@elseif ($question->type=="yes")
+	<i class="fas fa-check-circle"></i>
+	@elseif ($question->type=="repeat")
+	<i class="fas fa-redo"></i>	
+		@elseif ($question->type=="vuln")
+	<i class="fas fa-bug"></i>
 	@endif
 
   </span>
@@ -46,8 +50,21 @@
 
 {!! $question->question !!}
       </p>
-	  <p>
-	  Answer:<strong>{{$question->answer}}</strong>
+	  <p><strong>Answer:
+	    @if ($question->type=="yes")
+				<i class="fas fa-check-circle"></i>
+		@elseif ($question->type=="string")
+		
+		{{$question->answer->answer}}
+		
+		@else
+			<ul>
+			@foreach($question->answers as $answer)
+				<li>{{$answer->answer}}</li>
+			@endforeach
+			</ul>
+	   @endif
+	</strong>
 	  
 	  </p>
 	  <p>

@@ -162,19 +162,31 @@
 			
 			 
 				 <p>{!! $question->question !!}</p>
-				 <p><strong>{{$question->answer}}</strong></p>
+				  @if( $question->type=='string') 
+				 <p><strong>{{$question->answer->answer}}</strong></p>
+			   @elseif( $question->type=='repeat' || $question->type=='vuln')
+				@foreach($question->answers as $answer)
+				<li>{{$answer->answer}}</li>
+			@endforeach
+
+				@endif
+					
 		
 			@else
-		<form method="POST" action="{{route('question-answer',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">
+		<form method="POST" action="{{route('question-answer',['course_id' => $course->id,'topic_id' => $topic->id,'node_id' => $node->node_id])}}">
 			@csrf
 			<input type="hidden" name="question_id" value="{{$question->id}}">
 			 <div class="field">
 			  <div class="control">
 				 {!! $question->question !!}
 				 </div><br/>
+				  @if( $question->type!='yes') 
 				  <div class="control">
 					<input class="input" type="text" name="answer" placeholder="Text input">
 				  </div>
+				  @else
+					  <input type="hidden" name="answer" value="yes">
+				  @endif
 				</div>
 				 
 				<div class="field">

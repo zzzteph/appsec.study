@@ -170,7 +170,7 @@ Route::middleware(['auth','verified'])->group(function () {
 	
 //actions
 	Route::put('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
-	Route::post('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}', [LabLessonQuestionController::class, 'answer'])->name('question-answer');
+	Route::post('courses/{course_id}/topics/{topic_id}/lessons/{node_id}', [LabLessonQuestionController::class, 'answer'])->name('question-answer');
 	//tasks
 	Route::post('/task/{node_id}', [TaskController::class, 'start'])->name('start-task');
 	Route::delete('/task/{node_id}', [TaskController::class, 'stop'])->name('stop-task');
