@@ -14,11 +14,21 @@
 
 		 <div class="container">
 <h1 class="title">{{$lesson->theory->header}}
- @if($node->status=='success' || $node->status=='fail' )
+ @if($node->status=='success')
   <span class="icon has-text-success">
     <i class="fas fa-check"></i>
   </span>
+@elseif($node->status=='fail')
+
+  <span class="icon has-text-danger">
+    <i class="fas fa-ban"></i>
+  </span>
+
 @endif
+
+
+
+
 </h1>
 <div class="content">
 {!! $lesson->theory->content !!}
@@ -36,7 +46,11 @@
  <hr/>
  @if($node->status!='success' && $node->status!='fail')
 	 
- 
+  <div class="columns is-mobile">
+
+
+
+ <div class="column is-4">
   <form method="POST" action="{{route('mark-theory-as-read',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">
   @method('PUT')
   @csrf
@@ -59,8 +73,36 @@
   </div>
 </div>
 </form>
+</div>
 
+@if($lesson->theory->cancel==TRUE)
+ <div class="column is-4 is-offset-6">
+  <form method="POST" action="{{route('mark-theory-as-canceled',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">
+  @method('PUT')
+  @csrf
+<div class="field is-grouped-right">
+  <div class="control">
+    <button class="button is-danger">
+	
+	<span class="icon-text">
+  <span class="icon">
+    <i class="fas fa-ban"></i>
+  </span>
+  <span>Cancel</span>
+</span>
+	
+	
+	
+	
+	
+	</button>
+  </div>
+</div>
+</form>
+</div>
+@endif
 	@endif
+	</div>
 			</div>
 
     </section>

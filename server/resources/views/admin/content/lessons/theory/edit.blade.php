@@ -57,6 +57,23 @@
   </div>
 </div>
 
+<div class="field">
+  <div class="control">
+    <label class="checkbox">
+
+	@if (isset($lesson->theory->cancel))
+		@if ($lesson->theory->cancel)
+			<input type="checkbox" name="cancel" checked>
+		@else
+			<input type="checkbox" name="cancel">
+		@endif
+	@else
+		<input type="checkbox" name="cancel">
+	@endif
+     Can be canceled?
+    </label>
+  </div>
+</div>
 
 
 <div class="field">

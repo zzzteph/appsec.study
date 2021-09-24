@@ -51,22 +51,26 @@
   </div>
   <div class="media-right">
 
+@if($topic->theory_lesson_done_count!=0)
 <p>
 <span class="icon-text  is-size-5  is-align-items-center">
   <span class="icon is-large">
     <i class="fas fa-tasks fa-lg"></i>
   </span>
-  <span>{{$topic->theory_lesson_done_count}}/{{$topic->theory_lesson_count}}</span>
+  <span>{{$topic->theory_lesson_done_count}}</span>
 </span>
 </p>
+@endif
+@if($topic->lab_lesson_done_count!=0)
 <p>
 <span class="icon-text  is-size-5 is-align-items-center">
   <span class="icon is-large">
     <i class="fas fa-flask fa-lg"></i>
   </span>
-  <span>{{$topic->lab_lesson_done_count}}/{{$topic->lab_lesson_count}}</span>
+  <span>{{$topic->lab_lesson_done_count}}</span>
 </span>
 </p>
+@endif
   </div>
 </article>
   

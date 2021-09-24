@@ -18,6 +18,7 @@ class NodesController extends Controller
     {
 		$course=Course::where('published', true)->findOrFail($course_id);
 		$topic=Topic::findOrFail($topic_id);
+
 		return view('content.nodes',['course' =>$course,'topic' =>$topic,'nodes'=>$topic->user_route()]);
 		
     }

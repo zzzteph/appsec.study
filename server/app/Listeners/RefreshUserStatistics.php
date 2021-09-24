@@ -41,6 +41,7 @@ class RefreshUserStatistics
 		$userLabsDoneCount=0;
 		foreach($user_lessons as $user_lesson)
 		{
+			//we can't remove user statistics, but can supress it
 			if($user_lesson->topic_node->lesson->type=='lab')
 				$userLabsDoneCount++;
 		}

@@ -187,9 +187,10 @@ routes=JSON.parse(document.getElementById('routes').value);
 	for (var i = 0; i < routes.length; i++) {
 		if(routes[i].condition=='fail')
    graph+=routes[i].from+'->'+routes[i].to+ ' [color=red];\n';
-else
+else if(routes[i].condition=='success')
     graph+=routes[i].from+'->'+routes[i].to+ ' [color=green];\n';
-
+else if(routes[i].condition=='none')
+	 graph+=routes[i].from+'->'+routes[i].to+ ' [color=black];\n';
 }
 	 } catch(e) {
     document.getElementById('error').appendChild("Erorr");

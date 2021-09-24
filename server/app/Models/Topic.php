@@ -35,6 +35,7 @@ class Topic extends Model
 	
 	public function current_user_node()
 	{
+		if($this->user_route()==FALSE)return FALSE;
 		return $this->user_route()->last();
 	}
 	
@@ -65,28 +66,75 @@ class Topic extends Model
 		
 		if($currentNode->status=="fail")
 		{
-			if($currentNode->getRoute('fail')==FALSE)return $userNodes;
-			$currentNode=$currentNode->getRoute('fail');
+			if($currentNode->getRoute('fail')==FALSE)
+			{
+				if($currentNode->getRoute('none')==FALSE)
+					return $userNodes;
+				$currentNode=$currentNode->getRoute('none');
+			}
+			else
+			{
+				$currentNode=$currentNode->getRoute('fail');
+			}
 		}
-		if($currentNode->status=="success")
+		else if($currentNode->status=="success")
 		{
-			if($currentNode->getRoute("success")==FALSE)return $userNodes;
-			$currentNode=$currentNode->getRoute("success");
+			if($currentNode->getRoute('success')==FALSE)
+			{
+				if($currentNode->getRoute('none')==FALSE)
+					return $userNodes;
+				$currentNode=$currentNode->getRoute('none');
+			}
+			else
+			{
+				$currentNode=$currentNode->getRoute('success');
+			}
 		}
 		
 	}
+
 	return $userNodes;
 
 	}
 
 	public function getIsDoneAttribute()
 	{
-	//	 foreach($this->lessons as $lesson)
-	//  {
-	//	  if(!$lesson->is_done && $lesson->published==TRUE)return FALSE;
-	//  }
-	  return true;
+		$currentNode=$this->current_user_node();
+		if($currentNode==FALSE)return FALSE;
+		if($currentNode->status=='success' || $currentNode->status=='fail')return TRUE;
+		return false;
 	}
+	
+	public function getTheoryLessonDoneCountAttribute()
+	{
+		$userNodes=$this->user_route();
+		if($userNodes==FALSE)return 0;
+		$count=0;
+		foreach($userNodes as $node)
+		{
+			if($node->status=='success' || $node->status=='fail' )
+			{
+				if($node->lesson->type=='theory')$count++;
+			}
+		}
+		return $count;
+	}
+
+		public function getLabLessonDoneCountAttribute()
+	{
+		$userNodes=$this->user_route();
+		if($userNodes==FALSE)return 0;
+		$count=0;
+		foreach($userNodes as $node)
+		{
+			if($node->status=='success' || $node->status=='fail' )
+			{
+				if($node->lesson->type=='lab')$count++;
+			}
+		}
+		return $count;
+	}
+
 	
     protected static function booted()
     {

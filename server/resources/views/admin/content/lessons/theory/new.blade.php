@@ -50,9 +50,21 @@
 
 
 <div class="field">
-  <label class="label">Scope</label>
+  <label class="label">Score</label>
   <div class="control">
 		<input class="input" type="text" placeholder="100" name="score" value="100">
+  </div>
+</div>
+
+
+<div class="field">
+  <div class="control">
+    <label class="checkbox">
+
+		<input type="checkbox" name="cancel">
+
+     Can be canceled?
+    </label>
   </div>
 </div>
 
@@ -62,15 +74,9 @@
   <div class="control">
     <label class="checkbox">
 	
-	@if (isset($lesson->published))
-		@if ($lesson->published)
-			<input type="checkbox" name="published" checked>
-		@else
-			<input type="checkbox" name="published">
-		@endif
-	@else
+
 		<input type="checkbox" name="published">
-	@endif
+
      Published
     </label>
   </div>

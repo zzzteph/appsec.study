@@ -56,6 +56,9 @@ class TheoryLessonController extends Controller
 		$lesson->type='theory';
 		$lesson->theory->header=$request->input('header');
 		$lesson->theory->content=$request->input('content');
+		$lesson->theory->cancel=FALSE;
+			if($request->filled('cancel'))
+		$lesson->theory->cancel=TRUE;
 		if($request->filled('score'))
 		{
 			$lesson->theory->score=$request->input('score');
@@ -99,6 +102,11 @@ class TheoryLessonController extends Controller
 		$theoryLesson=new TheoryLesson;
 		$theoryLesson->header=$request->input('header');
 		$theoryLesson->content=$request->input('content');
+		$theoryLesson->cancel=FALSE;
+			if($request->filled('cancel'))
+		$theoryLesson->cancel=TRUE;
+		
+		
 		if($request->filled('score'))
 		{
 			$theoryLesson->score=$request->input('score');

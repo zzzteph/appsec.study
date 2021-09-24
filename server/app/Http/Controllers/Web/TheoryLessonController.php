@@ -42,9 +42,39 @@ class TheoryLessonController extends Controller
 		}
 		$userTopicNode->status='success';
 		$userTopicNode->save();
-			return redirect()->route('view-lesson', ['course_id' => $course_id,'topic_id' => $topic_id,'node_id' => $node->node_id]);
+		return redirect()->route('view-lesson', ['course_id' => $course_id,'topic_id' => $topic_id,'node_id' => $node->node_id]);
     }
 
+	public function mark_as_canceled($course_id,$topic_id,$lesson_id)
+    {
+		//check if userLesson exist
+		$course=Course::where('published', true)->findOrFail($course_id);
+		$topic=Topic::findOrFail($topic_id);
+		$node=$topic->current_user_node();
+		if($node->status!='todo' &&  $node->status!=FALSE)
+		{
+			return back()->withErrors([	'message' => 'You can not do anything to this lesson']);
+		}
+		if($node->lesson->type!='theory')
+		{
+			return back()->withErrors([	'message' => 'This is not theory lesson']);
+		}
+		if($node->lesson->theory->cancel==FALSE)
+			return back()->withErrors([	'message' => 'Wrong lesson type']);
+		$userTopicNode=UserTopicNode::where('user_id',Auth::user()->id)->where('topic_node_id',$node->id)->first();
+		if($userTopicNode==null)
+		{
+			$userTopicNode=new UserTopicNode;
+			$userTopicNode->topic_node_id=$node->id;
+			$userTopicNode->user_id=Auth::user()->id;
+			
+		}
+		
+			$userTopicNode->status='fail';
+		
+		$userTopicNode->save();
+		return redirect()->route('view-lesson', ['course_id' => $course_id,'topic_id' => $topic_id,'node_id' => $node->node_id]);
+    }
 
 
 

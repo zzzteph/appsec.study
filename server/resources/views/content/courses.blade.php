@@ -48,7 +48,7 @@
   <span class="icon is-large">
     <i class="fas fa-tasks fa-lg"></i>
   </span>
-
+ <span>{{$course->theory_lesson_done_count}}</span>
 </span>
 </p>
 <p>
@@ -56,14 +56,14 @@
   <span class="icon is-large">
     <i class="fas fa-flask fa-lg"></i>
   </span>
-
+ <span>{{$course->lab_lesson_done_count}}</span>
 </span>
 </p><p>
 <span class="icon-text is-size-5 is-align-items-center">
   <span class="icon is-large">
     <i class="fas fa-graduation-cap fa-lg"></i>
   </span>
-  
+   <span>{{$course->topics_done_count}}/{{$course->topics_count}}</span>
 
 </span>
 </p>

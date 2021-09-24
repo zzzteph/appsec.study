@@ -22,11 +22,10 @@
 
  @if($nodes!=FALSE)
 @foreach ($nodes as $node)
-   
  @if($node->status=='success')
 <article class="media box has-background-success-light">
 @elseif($node->status=='fail')
-<article class="media box has-background-success-danger">
+<article class="media box has-background-danger-light">
 @else
 	<article class="media box">
 @endif
@@ -66,8 +65,8 @@
   </div>
   <div class="media-right">
 
+@if($node->status=='success')
 <p>
-@if($node->lesson->status=='done')
 <span class="icon-text is-size-5 is-align-items-center">
   <span class="icon is-large">
     <i class="fas fa-check fa-lg"></i>
@@ -75,8 +74,15 @@
 </span>
 </p>
 @endif
-
-
+@if($node->status=='fail')
+<p>
+<span class="icon-text is-size-5 is-align-items-center">
+  <span class="icon is-large">
+    <i class="fas fa-ban fa-lg"></i>
+  </span>
+</span>
+</p>	
+@endif
   </div>
 </article>
    

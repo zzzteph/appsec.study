@@ -22,28 +22,8 @@ class Course extends Model
         });
     }
 
-	public function getLabLessonCountAttribute()
-    {
-		$count=0;
-      foreach($this->topics as $topic)
-	  {
-			if($topic->published)
-		 $count+=$topic->lab_lesson_count;
-	  }
-		return $count;
-    }
-	
-	public function getTheoryLessonCountAttribute()
-    {
-     
-	  $count=0;
-     foreach($this->topics as $topic)
-	  {if($topic->published)
-		  $count+=$topic->theory_lesson_count;
-	  }
-		return $count;
-    }
-	
+
+
 	public function getTheoryLessonDoneCountAttribute()
     {
      
@@ -54,12 +34,13 @@ class Course extends Model
 	  }
 		return $count;
     }
-		public function getLabLessonDoneCountAttribute()
+	public function getLabLessonDoneCountAttribute()
     {
      
 	  $count=0;
      foreach($this->topics as $topic)
-	  {if($topic->published)
+	  {
+		  if($topic->published)
 		  $count+=$topic->lab_lesson_done_count;
 	  }
 		return $count;
