@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\Topic;
 use App\Models\Lesson;
 use App\Models\TopicNode;
+use App\Models\TopicNodeCondition;
 use App\Models\TopicNodeRoute;
 use Illuminate\Support\Facades\Storage;
 class NodesController extends Controller
@@ -100,6 +101,15 @@ class NodesController extends Controller
 			$topicNode->lesson_id=$node->lesson;
 			$topicNode->node_id=$node->id;
 			$topicNode->save();
+			
+			if(isset($node->timeout))
+			{
+				$topicNodeCondition=new TopicNodeCondition;
+				$topicNodeCondition->topic_node_id=$topicNode->id;
+				$topicNodeCondition->type='timeout';
+				$topicNodeCondition->value=intval($node->timeout);
+				$topicNodeCondition->save();
+			}
 		}
 
 		foreach($routes as $route)

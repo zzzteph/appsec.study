@@ -26,6 +26,7 @@ class Kernel extends ConsoleKernel
     {
          $schedule->command('iamtoken:yandex')->hourly();
 		 $schedule->command('uservm:stop')->everyMinute();
+		 $schedule->command('nodes:timeout')->everyMinute();
     }
 
     /**

@@ -142,8 +142,18 @@
 
 
 	       <a class="navbar-item" href="{{route('admin-view-lessons')}}">
-            Lessons lists
+            All Lessons
           </a>	
+		 
+		   <a class="navbar-item" href="{{route('admin-view-lessons')}}">
+            Theory
+          </a>	
+		   <a class="navbar-item" href="{{route('admin-view-lessons')}}">
+            Labs
+          </a>	
+		    <hr class="navbar-divider">
+		  
+		  
 		 <a class="navbar-item" href="{{route('admin-view-courses')}}">
            Courses
           </a>	
@@ -167,7 +177,7 @@
     </div>
 
        <div class="navbar-end">
-	      <a class="bd-navbar-icon navbar-item" href="https://github.com/zzzteph/appsecstudy" target="_blank">
+	      <a class="bd-navbar-icon navbar-item" href="https://github.com/zzzteph/appsec.study" target="_blank">
           <span class="icon" style="color: var(--github);">
           <i class="fab fa-lg fa-github"></i>
         </span>

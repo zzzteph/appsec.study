@@ -65,6 +65,61 @@
   </div>
   <div class="media-right">
 
+@if($node->topic_node_condition)
+	@if($node->topic_node_condition->type=='timeout')
+		@if($node->status=='todo')
+		<p>
+		<div class="fa-1x">
+			<span class="icon-text is-size-5 is-align-items-center">
+			   <span>{{$node->topic_node_condition->time_left}} min.</span>
+
+			  @if($node->topic_node_condition->time_left_progress>60)
+				  
+			  				<span class="icon is-large">
+				<i class="fas fa-hourglass fa-spin"></i>
+			  </span>
+			  
+			<progress class="progress is-success" value="{{$node->topic_node_condition->time_left_progress}}" max="100">{{$node->topic_node_condition->time_left_progress}} %.</progress>
+			@elseif($node->topic_node_condition->time_left_progress <= 60 && $node->topic_node_condition->time_left_progress>30)
+			
+							<span class="icon is-large">
+				<i class="fas fa-hourglass-half fa-spin"></i>
+			  </span>
+			<progress class="progress is-warning" value="{{$node->topic_node_condition->time_left_progress}}" max="100">{{$node->topic_node_condition->time_left_progress}} %.</progress>
+
+			 	@else
+				<span class="icon is-large">
+				<i class="far fa-hourglass fa-spin"></i>
+			  </span>
+					<progress class="progress is-danger" value="{{$node->topic_node_condition->time_left_progress}}" max="100">{{$node->topic_node_condition->time_left_progress}} %.</progress>
+				@endif
+			  
+			  
+			</span>
+</div>
+		</p>
+		@elseif($node->status==FALSE)
+			
+				<p>
+
+				<span class="icon-text is-size-5 is-align-items-center">
+			   <span>{{$node->topic_node_condition->time_left}} min.</span>
+			  <span class="icon is-large">
+				<i class="fas fa-hourglass"></i>
+			  </span>
+			  
+			  
+			</span>
+
+		</p>
+		
+		
+				
+		@endif
+	@endif
+@endif
+
+
 @if($node->status=='success')
 <p>
 <span class="icon-text is-size-5 is-align-items-center">

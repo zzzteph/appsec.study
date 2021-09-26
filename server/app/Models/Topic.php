@@ -59,6 +59,7 @@ class Topic extends Model
 		$userNodes->push($currentNode);
 		if($currentNode->status=='todo' || $currentNode->status==FALSE)
 		{
+
 			return $userNodes;
 		}
 		//check if user on last node

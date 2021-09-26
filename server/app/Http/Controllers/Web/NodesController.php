@@ -10,6 +10,7 @@ use App\Models\Topic;
 use App\Models\Lesson;
 use App\Models\TopicNode;
 use App\Models\TopicNodeRoute;
+use App\Models\UserTopicNode;
 use Illuminate\Support\Facades\Storage;
 class NodesController extends Controller
 {
@@ -41,8 +42,16 @@ class NodesController extends Controller
 		{
 			return redirect()->back()->withErrors('You have no access to this lesson');
 		}
-
-
+		$userTopicNode=UserTopicNode::where('user_id',Auth::user()->id)->where('topic_node_id',$node->id)->first();
+		if($userTopicNode==null)
+		{
+			$userTopicNode=new UserTopicNode;
+			$userTopicNode->topic_node_id=$node->id;
+			$userTopicNode->user_id=Auth::user()->id;
+			$userTopicNode->status='todo';
+			$userTopicNode->save();
+			
+		}
 		if($lesson->type=="lab")
 		{
 			return view('content.lesson.lab',['course' =>$course,'topic' =>$topic,'lesson' =>$lesson,'node' =>$node,'task'=>Auth::user()->current_user_lab_vm()]);

@@ -17,6 +17,12 @@ class TopicNode extends Model
         return $this->hasMany(TopicNodeRoute::class,'to_id','id');
     }
 
+	public function topic_node_condition()
+    {
+        return $this->hasOne(TopicNodeCondition::class);
+    }
+
+
 	public function getRoute($type)
     {
        $route=TopicNodeRoute::where('from_id',$this->id)->where('condition',$type)->first();
@@ -32,7 +38,10 @@ class TopicNode extends Model
 		return $this->belongsTo(Topic::class);
     }
 
-
+	public function user_topic_node()
+	{
+		return $this->hasOne(UserTopicNode::class)->where('user_id',Auth::user()->id);
+	}
 
 	public function lesson()
     {
@@ -48,6 +57,9 @@ class TopicNode extends Model
 		return FALSE;
     }
 
+
+
+	
 
 
 
