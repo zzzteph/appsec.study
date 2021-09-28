@@ -24,11 +24,14 @@
  <div class="columns is-mobile">
 
 
-
- <div class="column is-4">
+@if($lesson->theory->cancel==TRUE)
+ <div class="column is-half">
+@else
+	 <div class="column is-full">
+@endif
 <div class="field">
   <div class="control">
-    <button class="button is-success">
+    <button class="button is-success is-large is-fullwidth">
 	
 	<span class="icon-text">
   <span class="icon">
@@ -42,10 +45,10 @@
 	 </div>
 @if($lesson->theory->cancel==TRUE)
 
- <div class="column is-4 is-offset-6">
+ <div class="column is-half">
 <div class="field is-grouped-right">
   <div class="control">
-    <button class="button is-danger">
+    <button class="button is-danger is-large is-fullwidth">
 	
 	<span class="icon-text">
   <span class="icon">

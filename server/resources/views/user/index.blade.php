@@ -81,17 +81,22 @@
 <h2 class="subtitle">Last lessons</h2>
 
 <hr/>
-@foreach ($user->user_lesson as $lesson)
-    @if ($lesson->status != 'done')
+@foreach ($user->nodes as $node)
+    @if ($node->status == 'todo')
         @continue
     @endif
 
- <article class="media box has-background-success-light">
+ @if($node->status=='success')
+<article class="media box has-background-success-light">
+@elseif($node->status=='fail')
+<article class="media box has-background-danger-light">
+@endif
+
   <figure class="media-left">
   
   <span class="icon-text is-align-items-center">
   <span class="icon is-large">
-        @if($lesson->lesson->type=="theory")
+        @if($node->topic_node->lesson->type=="theory")
     <i class="fas fa-book-open fa-lg"></i>
 	@else
 	 <i class="fas fa-flask fa-lg"></i>
@@ -108,11 +113,11 @@
     <div class="content">
       <p>
         <strong class="is-size-4">
-		{{$lesson->lesson->name}}
+		{{$node->topic_node->lesson->name}}
 		</strong>
       </p>
 	<p>
-	{{$lesson->created_at}}
+	{{$node->topic_node->created_at}}
 	</p>	
 	  
     </div>

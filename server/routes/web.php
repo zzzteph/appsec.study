@@ -119,8 +119,7 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	//general lessons administration
 	
 	Route::get('lessons', [AdminLesson::class, 'list'])->name('admin-view-lessons');
-	Route::get('lessons/{id}', [AdminLesson::class, 'view'])->name('admin-view-lesson');
-	Route::delete('lessons/{id}', [AdminLesson::class, 'delete'])->name('admin-delete-lesson');
+
 
 
 	//admin theory lesson 
@@ -134,7 +133,9 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	Route::get('lessons/lab/{id}',[AdminLabLesson::class, 'edit'])->name('admin-edit-lab-lesson');
 	Route::post('lessons/lab', [AdminLabLesson::class, 'create'])->name('admin-add-new-lab-lesson');
 	Route::put('lessons/lab/{id}', [AdminLabLesson::class, 'update'])->name('admin-update-lab-lesson');
-
+	
+	Route::get('lessons/{id}', [AdminLesson::class, 'view'])->name('admin-view-lesson');
+	Route::delete('lessons/{id}', [AdminLesson::class, 'delete'])->name('admin-delete-lesson');
 
 
 

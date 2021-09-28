@@ -88,6 +88,7 @@ class TaskController extends Controller
 				$userLabVm->user_id=Auth::user()->id;
 				$userLabVm->template_id=$lab_lesson->vm->template_id;
 				$userLabVm->topic_node_id=$node->id;
+				$userLabVm->vm_id=$lab_lesson->vm->id;
 				$userLabVm->ip="";
 				$userLabVm->instance_id="";
 				$userLabVm->cloud_id=$cloud->id;
@@ -173,8 +174,9 @@ class TaskController extends Controller
 			$userLabVm=new UserCloudVm;
 			$userLabVm->user_id=Auth::user()->id;
 			$userLabVm->template_id=$user_vm->template_id;
+			$userLabVm->vm_id=$user_vm->id;
 			$userLabVm->topic_node_id=0;
-			$userLabVm->ip="";
+			$userLabVm->ip='';
 			$userLabVm->instance_id="";
 			$userLabVm->cloud_id=$cloud->id;
 			$userLabVm->type='user';

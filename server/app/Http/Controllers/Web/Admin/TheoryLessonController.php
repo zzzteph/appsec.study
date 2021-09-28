@@ -19,6 +19,7 @@ class TheoryLessonController extends Controller
 	
 	public function new()
     {
+
 		return view('admin.content.lessons.theory.new');
     }
 
@@ -65,7 +66,7 @@ class TheoryLessonController extends Controller
 		}
 		$lesson->save();
 		$lesson->theory->save();
-		return redirect()->route('admin-edit-theory-lesson',['id' =>$lesson->id]);
+		return redirect()->route('admin-view-lesson',['id' =>$lesson->id]);
 
 		
 		
@@ -114,7 +115,7 @@ class TheoryLessonController extends Controller
 		$lesson->theory()->save($theoryLesson);
 		
 	
-	return redirect()->route('admin-edit-theory-lesson',['id' =>$lesson->id]);
+	return redirect()->route('admin-view-lesson',['id' =>$lesson->id]);
 	}
 	
 

@@ -93,8 +93,8 @@
 				</td>
 				
 				<td>
-				@if(!empty( $vm->vm_config->size))
-					<input class="input" name="size" type="text" name="size"  value="{{ $vm->vm_config->size }}">
+				@if(!empty( $vm->config->size))
+					<input class="input" name="size" type="text" name="size"  value="{{ $vm->config->size }}">
 				@else
 					<input class="input" name="size" type="text" name="size"  value="0">
 				@endif

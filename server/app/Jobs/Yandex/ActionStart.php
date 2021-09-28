@@ -16,6 +16,7 @@ use App\Rest\Yandex\Instance\DeleteInstance;
 use App\Models\User;
 use App\Models\UserCloudVm;
 use App\Models\Cloud;
+use App\Models\Vm;
 use App\Models\Iamtoken;
 use Illuminate\Support\Str;
 use App\Models\UserCloudVmLog;
@@ -49,10 +50,11 @@ class ActionStart implements ShouldQueue
 		
 			$iamtoken = Iamtoken::where('cloud_id',$this->cloud->id)->first();
 		
-			$name="user-".$this->uservm->user_id."-".strtolower(Str::random(10));		
-			
-		//	$info=new CreateInstance($this->cloud->folder_id,$name,,$this->uservm->template_id,$this->cloud->subnet_id,$this->cloud->zone_id,$this->cloud->platform_id,$iamtoken->id);//4294967296
-			$info=new CreateInstance($this->cloud->folder_id,$name,"13958643712",$this->uservm->template_id,$this->cloud->subnet_id,$this->cloud->zone_id,$this->cloud->platform_id,$iamtoken->id);//4294967296
+			$name="id-".$this->uservm->id."-template-".$this->uservm->template_id."-user-".$this->uservm->user_id."-".strtolower(Str::random(5));		
+			//get vm size
+			$vm=Vm::where('id',$this->uservm->vm_id)->first();
+			$size=$vm->config->size;
+			$info=new CreateInstance($this->cloud->folder_id,$name,$size,$this->uservm->template_id,$this->cloud->subnet_id,$this->cloud->zone_id,$this->cloud->platform_id,$iamtoken->id);//4294967296
 		
 			$response=$info->execute();
 			$this->response=$response;

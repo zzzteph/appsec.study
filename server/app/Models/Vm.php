@@ -15,9 +15,9 @@ class Vm extends Model
         return $this->hasOne(CloudVm::class);
     }
 	
-	public function vm_config()
+	public function config()
     {
-        return $this->hasOne(VmConfig::class);
+        return $this->hasOne(VmConfig::class,'id');
     }
 	
 	

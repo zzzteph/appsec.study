@@ -50,7 +50,7 @@ class Timeout implements ShouldQueue
 		if($start<40)$start=40;
 		if($start<100)
 		{
-			for($i=$start;$i<100;$i+=3)
+			for($i=$start;$i<100;$i++)
 			{
 				sleep(1);
 				
@@ -60,7 +60,7 @@ class Timeout implements ShouldQueue
 		}
 		else
 		{
-			for($i=0;$i<20;$i++)
+			for($i=0;$i<60;$i++)
 			{
 				sleep(1);
 			}

@@ -50,13 +50,17 @@
 
 
 
- <div class="column is-4">
+@if($lesson->theory->cancel==TRUE)
+ <div class="column is-half">
+@else
+	 <div class="column is-full">
+@endif
   <form method="POST" action="{{route('mark-theory-as-read',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">
   @method('PUT')
   @csrf
 <div class="field">
   <div class="control">
-    <button class="button is-success">
+    <button class="button is-success is-large is-fullwidth">
 	
 	<span class="icon-text">
   <span class="icon">
@@ -76,13 +80,13 @@
 </div>
 
 @if($lesson->theory->cancel==TRUE)
- <div class="column is-4 is-offset-6">
+ <div class="column is-half">
   <form method="POST" action="{{route('mark-theory-as-canceled',['course_id' => $course->id,'topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">
   @method('PUT')
   @csrf
 <div class="field is-grouped-right">
   <div class="control">
-    <button class="button is-danger">
+    <button class="button is-danger is-large is-fullwidth">
 	
 	<span class="icon-text">
   <span class="icon">

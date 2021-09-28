@@ -45,7 +45,8 @@ class VmsController extends Controller
 		$config=new VmConfig;
 			$config->size=$request->input('size');
 			$config->params="";
-			$vm->vm_config()->save($config);
+			$config->vm_id=$vm->id;
+			$config->save();
 		
 		
 		return back();
@@ -71,11 +72,12 @@ class VmsController extends Controller
 		$vm->save();
 		$vm->cloud->template_id=$request->input('cloud_id');
 		$vm->cloud->save();
-		if(is_null($vm->vm_config)) {
+		if(is_null($vm->config)) {
 			$config=new VmConfig;
 			$config->size=$request->input('size');
 			$config->params="";
-			$vm->vm_config()->save($config);
+			$config->vm_id=$vm->id;
+			$config->save();
 		}
 		else
 		{
