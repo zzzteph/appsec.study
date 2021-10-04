@@ -19,11 +19,13 @@ class UserLabLessonQuestion extends Model
     {
         static::created(function ($entry) {
 			
-				event(new UserStatisticsChange(User::find($entry->user_id)));
+			$user_topic_node=UserTopicNode::where('id',$entry->user_topic_node_id)->first();
+				event(new UserStatisticsChange(User::find($user_topic_node->user_id)));
         });
 		
 		static::updated(function ($entry) {
-						event(new UserStatisticsChange(User::find($entry->user_id)));
+			$user_topic_node=UserTopicNode::where('id',$entry->user_topic_node_id)->first();
+						event(new UserStatisticsChange(User::find($user_topic_node->user_id)));
         });
 		
 		

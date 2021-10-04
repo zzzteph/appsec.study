@@ -33,10 +33,17 @@ class RefreshUserStatistics
     public function handle(UserStatisticsChange $event)
     {
         $user=$event->user;
-		
+		$user_topics=UserTopicNode::where('user_id',$user->id)->get();
 		$user->user_statistic->lessons_done=UserTopicNode::where('user_id',$user->id)->where('status','!=','todo')->count();
-		$user->user_statistic->answers=UserLabLessonQuestion::where('user_id',$user->id)->count();
-		$user->user_statistic->correct_answers=UserLabLessonQuestion::where('user_id',$user->id)->where('correct',TRUE)->count();
+		$user->user_statistic->answers=0;
+		$user->user_statistic->correct_answers=0;
+		foreach($user_topics as $user_topic)
+		{
+			$user->user_statistic->answers+=$user_topic->questions_count;
+			$user->user_statistic->correct_answers+=$user_topic->questions_correct_count;
+		}
+		
+		
 		$user_lessons=UserTopicNode::where('user_id',$user->id)->get();
 		$userLabsDoneCount=0;
 		foreach($user_lessons as $user_lesson)
@@ -61,12 +68,19 @@ class RefreshUserStatistics
 				$score+=$user_lesson->topic_node->lesson->theory->score;
 		}			
 		//
-		$correctAnswers=UserLabLessonQuestion::where('user_id',$user->id)->where('correct',TRUE)->get();
-		
-		foreach($correctAnswers as $answer)
+
+		foreach($user_topics as $user_topic)
 		{
-			$score+=$answer->lab_lesson_question->score;
+			foreach($user_topic->user_lab_lesson_questions as $user_answer)
+			{
+				if($user_answer->correct==TRUE)
+				$score+=$user_answer->lab_lesson_question->score;
+				
+			}
+			
 		}
+		
+
 		
 			$user->user_statistic->score=$score;
 			$user->user_statistic->total_score=$score;

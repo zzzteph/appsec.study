@@ -31,10 +31,10 @@ class LabLessonQuestion extends Model
     }
 
 	
-	public function left_answers()
+	public function left_answers($user_topic_node_id)
 	{
 			$left_answers =collect();
-			$userAnswers=$this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->get();
+			$userAnswers=$this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_topic_node_id',$user_topic_node_id)->get();
 			foreach($this->answers as $answer)
 			{
 				$found=false;
@@ -58,9 +58,9 @@ class LabLessonQuestion extends Model
 	}
 	
 
-	public function user_answers()
+	public function user_answers($user_topic_node_id)
 	{
-		return $this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->get();
+		return $this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_topic_node_id',$user_topic_node_id)->get();
 	}
 	
 	
@@ -68,9 +68,9 @@ class LabLessonQuestion extends Model
 	
 	
 	
-	public function getCorrectAttribute()
+	public function correct($user_topic_node_id)
     {
-       	$userAnswers=$this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->first();
+       	$userAnswers=$this->hasMany(UserLabLessonQuestion::class)->where('user_topic_node_id',$user_topic_node_id)->where('correct',TRUE)->first();
 		
 		if($this->type=="yes" || $this->type=="string")
 		{
@@ -78,7 +78,7 @@ class LabLessonQuestion extends Model
 			return FALSE;
 		}
 	
-		$correctUserAnswersCount=$this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->where('user_id',Auth::user()->id)->count();
+		$correctUserAnswersCount=$this->hasMany(UserLabLessonQuestion::class)->where('user_topic_node_id',$user_topic_node_id)->where('correct',TRUE)->count();
 		$totalAnswers=$this->answers()->count();
 		if($this->type=="vuln" || $this->type=="repeat")
 		{

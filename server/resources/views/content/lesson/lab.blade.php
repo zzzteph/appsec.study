@@ -144,7 +144,7 @@
   <span class="icon has-text-info is-large">
     <i class="fas fa-question-circle fas fa-lg"></i>
   </span>
-  <span>{{$lesson->lab->correct_questions}} of {{$lesson->lab->questions_count}}</span>
+  <span>{{$lesson->lab->correct_questions($node->user_topic_node->id)}} of {{$lesson->lab->questions_count}}</span>
 </div>
 		 
 		 
@@ -158,14 +158,14 @@
 		 <div class="container">
 			 
 			 <div class="content box">
-			 @if( $question->correct) 
+			 @if( $question->correct($node->user_topic_node->id)) 
 			
-			 
+		
 				 <p>{!! $question->question !!}</p>
 				  @if( $question->type=='string') 
 				 <p><strong>{{$question->answer->answer}}</strong></p>
 			   @elseif( $question->type=='repeat' || $question->type=='vuln')
-				@foreach($question->user_answers() as $answer)
+				@foreach($question->user_answers($node->user_topic_node->id) as $answer)
 				<li>{{$answer->answer}}</li>
 			@endforeach
 
@@ -182,7 +182,7 @@
 				 </div><br/>
 				 @if( $question->type=='repeat' || $question->type=='vuln')
 					 <ul>
-				 				@foreach($question->user_answers() as $answer)
+				 				@foreach($question->user_answers($node->user_topic_node->id) as $answer)
 				<li>{{$answer->answer}}</li>
 			@endforeach
 			</ul>

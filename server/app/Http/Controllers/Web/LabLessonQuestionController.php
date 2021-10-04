@@ -49,8 +49,24 @@ class LabLessonQuestionController extends Controller
 		$lesson=$node->lesson;
 		$question=LabLessonQuestion::findOrFail($request->input('question_id'));
 
+		//update lesson status
+		$userNode=UserTopicNode::where('user_id',Auth::user()->id)->where('topic_node_id',$node->id)->first();
+		if($userNode===null)
+		{
+			$userNode=new UserTopicNode;
+			$userNode->topic_node_id=$node->id;
+			$userNode->user_id=Auth::user()->id;
+			$userNode->status='todo';
+			$userNode->save();
+		}
 
-		if($question->correct==TRUE)
+		if($userNode->status=='success' || $userNode->status=='fail')
+		{
+			return redirect()->back()->withErrors('You can\'t answer this question at this time');
+		}
+
+
+		if($question->correct($userNode->id)==TRUE)
 			return redirect()->route('view-lesson',['course_id' =>$course_id,'topic_id' =>$topic_id,'node_id' =>$node->node_id]);
 		if($lesson->type!="lab")
 			return redirect()->route('view-lesson',['course_id' =>$course_id,'topic_id' =>$topic_id,'node_id' =>$node->node_id]);
@@ -59,12 +75,12 @@ class LabLessonQuestionController extends Controller
 		
 		foreach($lesson->lab->questions as $lab_question)
 		{
-			if(($question->id!=$lab_question->id) && $lab_question->correct!==TRUE)
+			if(($question->id!=$lab_question->id) && $lab_question->correct($userNode->id)!==TRUE)
 			{
 				
 				return redirect()->route('view-lesson',['course_id' =>$course_id,'topic_id' =>$topic_id,'node_id' =>$node->node_id]);
 			}
-			if(($question->id==$lab_question->id) && $lab_question->correct!==TRUE)
+			if(($question->id==$lab_question->id) && $lab_question->correct($userNode->id)!==TRUE)
 			{
 				break;
 			}
@@ -78,7 +94,7 @@ class LabLessonQuestionController extends Controller
 		$userLabLessonQuestion= new UserLabLessonQuestion;
 		$userLabLessonQuestion->correct=FALSE;
 		$userLabLessonQuestion->lab_lesson_question_id=$question->id;
-		$userLabLessonQuestion->user_id=Auth::user()->id;
+		$userLabLessonQuestion->user_topic_node_id=$userNode->id;
 		$userLabLessonQuestion->answer=$request->input('answer');
 		if($question->type=='yes')
 			$userLabLessonQuestion->correct=TRUE;
@@ -94,7 +110,7 @@ class LabLessonQuestionController extends Controller
 		
 		if($question->type=='repeat' || $question->type=='vuln')
 		{
-			foreach($question->left_answers() as $answer)
+			foreach($question->left_answers($userNode->id) as $answer)
 			{
 				similar_text($answer->answer,$request->input('answer'),$similar_answers);
 				if($similar_answers>90)
@@ -113,30 +129,23 @@ class LabLessonQuestionController extends Controller
 		
 		
 		
-		//update lesson status
-		$userNode=UserTopicNode::where('user_id',Auth::user()->id)->where('topic_node_id',$node->id)->first();
-		if($userNode===null)
-		{
-			$userNode=new UserTopicNode;
-			$userNode->topic_node_id=$node->id;
-			$userNode->user_id=Auth::user()->id;
-			
-		}
-		//check if 
-		$userNode->status='todo';
+
+		
 		
 		$all_correct=true;
 		foreach($lesson->lab->questions as $lab_question)
 		{
-			if($lab_question->correct!==TRUE)
+			if($lab_question->correct($userNode->id)!==TRUE)
 			{	
 				$all_correct=false;
 				break;
 			}
 		}	
-		if($all_correct)$userNode->status='success';
-		$userNode->save();
-	
+		if($all_correct)
+		{
+			$userNode->status='success';
+			$userNode->save();
+		}
 		return redirect()->back()->with('success', 'You are right!');   
 
 	}

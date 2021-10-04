@@ -29,4 +29,22 @@ class UserTopicNode extends Model
 		
     }
 	
+		public function getQuestionsCountAttribute()
+    {
+		 return $this->hasMany(UserLabLessonQuestion::class)->count();
+
+    }
+			public function getQuestionsCorrectCountAttribute()
+    {
+		 return $this->hasMany(UserLabLessonQuestion::class)->where('correct',TRUE)->count();
+
+    }
+	
+		public function user_lab_lesson_questions()
+    {
+        return $this->hasMany(UserLabLessonQuestion::class);
+    }
+ 
+	
+	
 }

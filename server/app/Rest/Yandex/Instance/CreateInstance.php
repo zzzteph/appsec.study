@@ -33,7 +33,7 @@ class CreateInstance
 		$this->platformId=$platform_id;
 		$this->memory=2147483648;
 		$this->cores=2;
-		$this->coreFraction=5;
+		$this->coreFraction=20;
 		$this->gpus=0;
 		$this->internalAddress=false;
 		$this->externalAddress=true;

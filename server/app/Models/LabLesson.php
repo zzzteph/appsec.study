@@ -30,12 +30,12 @@ class LabLesson extends Model
     }
 	
 	
-	public function getCorrectQuestionsAttribute()
+	public function correct_questions($user_topic_node_id)
     {
 		$correct=0;
         foreach($this->questions as $question)
 		{
-			if($question->correct)$correct++;
+			if($question->correct($user_topic_node_id))$correct++;
 		}
 		return $correct;
     }

@@ -48,7 +48,7 @@
   <span class="icon has-text-info is-large">
     <i class="fas fa-question-circle fas fa-lg"></i>
   </span>
-  <span>{{$lesson->lab->correct_questions}} of {{$lesson->lab->questions_count}}</span>
+  <span>0 of {{$lesson->lab->questions_count}}</span>
 </div>
 		 
 		 

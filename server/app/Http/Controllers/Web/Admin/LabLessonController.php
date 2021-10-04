@@ -74,8 +74,7 @@ class LabLessonController extends Controller
 			'content' => 'required',
 			'vm' => 'required'
 		]);
-		$course=Course::findOrFail($course_id);
-		$topic=Topic::findOrFail($topic_id);
+
 		$vm=Vm::findOrFail($request->input('vm'));
 		$lesson=new Lesson; 
 		if($request->filled('name'))
