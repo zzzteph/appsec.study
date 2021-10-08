@@ -7,7 +7,7 @@ yarn-error.log
 # Laravel 4 specific
 /server/bootstrap/compiled.php
 /server/app/storage/
-
+/server/.env
 # Laravel 5 & Lumen specific
 public/storage
 public/hot

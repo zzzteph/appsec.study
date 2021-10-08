@@ -117,6 +117,7 @@
       <li>{{$answer->answer}}</li>
       @endforeach
       @endif
+	  </div>
       @elseif(!$question->correct($node->user_topic_node->id) && ($node->status!='success' && $node->status!='fail'))
       <div class="content box">
          <form method="POST" action="{{route('question-answer',['course_id' => $course->id,'topic_id' => $topic->id,'node_id' => $node->node_id])}}">
@@ -159,7 +160,7 @@
       @break
       @endif
       @endforeach
-   </div>
+   
 </section>
 @if(!is_null($task) && ($task->topic_node_id==$node->id) &&  ($task->status=='todo' || $task->status=='starting' || $task->status=='tostop' || $task->status=='stopping'))
 <script>

@@ -36,7 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
 					if (this.vm.status == 'terminated' || this.vm.status == 'running') {
 						document.location.reload(true);
 					}
-				});
+				}).catch(error => {
+					
+					document.location.reload(true);
+					
+				});;
 
 			},
 
@@ -73,7 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
 					if (this.vm.status != 'running') {
 						document.location.reload(true);
 					}
-				});
+				}).catch(error => {
+					
+					document.location.reload(true);
+					
+				});;
 
 			},
 
@@ -112,7 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
 					if (this.uservm.status == 'terminated' || this.uservm.status == 'running') {
 						document.location.reload(true);
 					}
-				});
+				}).catch(error => {
+					
+					document.location.reload(true);
+					
+				});;
 
 			},
 
@@ -148,7 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
 					if (this.uservm.status != 'running') {
 						document.location.reload(true);
 					}
-				});
+				}).catch(error => {
+					
+					document.location.reload(true);
+					
+				});;
 
 			},
 
@@ -174,23 +190,31 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 <footer class="footer is-fixed-bottom">
    <div class="content has-text-centered">
+
+   <strong>AppsecStudy</strong> 2021-{{ now()->year }} <br/>
+
+   <p>
+   <strong>AppsecStudy</strong> - open-source elearning management system for information security.<br/>
+   Follow us <a href="https://github.com/zzzteph/appsec.study">https://github.com/zzzteph/appsec.study</a><br/>
+   
+   </p>
       <p>
-         <span class="icon-text">
+         <span class="icon-text is-align-items-center">
          <a href="https://twitter.com/w34kp455">
          <span class="icon">
          <i class="fab fa-twitter"></i>
          </span>
-         <span>@w34kp455</span>
+       
          </a>
          </span>
-         <br />
-         <span class="icon-text">
-		   <span>Follow us </span>
-         <a href="https://github.com/zzzteph/appsec.study">
+
+         <span class="icon-text is-align-items-center">
+		 
+          <span> <a href="https://github.com/zzzteph">  </span>
          <span class="icon">
 			<i class="fab fa-github"></i>
          </span>
-         <span>appsec.study </span>
+
          </a>
          </span>
 		 
