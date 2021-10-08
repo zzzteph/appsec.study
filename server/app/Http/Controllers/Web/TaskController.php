@@ -41,7 +41,7 @@ class TaskController extends Controller
 				$count+=$vm->updated_at->diffInSeconds($vm->created_at);
 		}
 
-		if($count>6*3600)return FALSE;
+		//if($count>6*3600)return FALSE;
 		return TRUE;
 	}
 
@@ -84,6 +84,7 @@ class TaskController extends Controller
 				return redirect()->back()->withErrors('Unable to start task'.$cloud->vms_count);
 			}
 
+
 				$userLabVm=new UserCloudVm;
 				$userLabVm->user_id=Auth::user()->id;
 				$userLabVm->template_id=$lab_lesson->vm->template_id;
@@ -96,6 +97,7 @@ class TaskController extends Controller
 				$userLabVm->save();
 				
 				Bus::chain([			new ActionStart($userLabVm,$cloud)		])->onQueue('yandex')->dispatch($userLabVm,$cloud);
+
 			
 		}
 	

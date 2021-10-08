@@ -31,9 +31,41 @@ class NodesController extends Controller
             'message' => 'You must set nodes and routes!',
         ]);
 		
-		$nodes=json_decode($request->input('nodes'));
-		$routes=json_decode($request->input('routes'));
-		//todo-refactor for normal loops
+		
+		//todo JSON
+		$nodes=array();
+		$routes=array();
+		
+		$nodesEntries=explode(PHP_EOL,$request->input('nodes'));
+		foreach($nodesEntries	as $nodeEntry)
+		{
+			$nodeEntry=explode(',',$nodeEntry);
+			if(count($nodeEntry)==4)
+			{
+				array_push($nodes,(object)(array('id'=>$nodeEntry[0],'lesson'=>$nodeEntry[1],'timeout'=>intval($nodeEntry[3]))));
+			}
+			else if(count($nodeEntry)!=4 && isset($nodeEntry[0]) && isset($nodeEntry[1]))
+			{
+				array_push($nodes,(object)(array('id'=>$nodeEntry[0],'lesson'=>$nodeEntry[1])));
+			}				
+		}
+		
+		
+		$routesEntries=explode(PHP_EOL,$request->input('routes'));
+		foreach($routesEntries	as $routeEntry)
+		{
+			$routeEntry= preg_split('/(->|,)/',$routeEntry);
+			if(count($routeEntry)==3 && !empty($routeEntry[0]) && !empty($routeEntry[1])&& !empty($routeEntry[2]) )
+			{
+				array_push($routes,(object)(array('from'=>$routeEntry[0],'to'=>$routeEntry[1],'condition'=>trim($routeEntry[2]))));
+			}
+			else if(!empty($routeEntry[0]) && !empty($routeEntry[1]))
+			{
+				array_push($routes,(object)(array('from'=>$routeEntry[0],'to'=>$routeEntry[1],'condition'=>'none')));
+			}				
+		}
+
+		
 		
 		
 		//check if all nodes exist

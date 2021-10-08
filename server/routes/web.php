@@ -13,7 +13,6 @@ use App\Http\Controllers\Web\CloudController;
 use App\Http\Controllers\Web\UsersAdminController;
 use App\Http\Controllers\Web\VmsController;
 use App\Http\Controllers\Web\TaskController;
-use App\Http\Controllers\Web\StatisticsController;
 use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\UserVmsController;
 
@@ -190,7 +189,7 @@ Route::middleware(['auth','verified'])->group(function () {
 });
 
 Route::get('users/{id}',[UsersController::class, 'get'])->name('user-page');
-Route::get('rating', [StatisticsController::class, 'rating'])->name('rating');
+Route::get('users', [UsersController::class, 'list'])->name('users');
 
 Route::get('login', function () {    return view('auth.login');})->name('login');
 Route::get('register', function () {    return view('auth.register');})->name('register');

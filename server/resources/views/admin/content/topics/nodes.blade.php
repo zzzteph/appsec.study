@@ -31,18 +31,13 @@
   <div class="control">
  
 <textarea class="textarea" placeholder="Textarea" name="nodes" id="nodes">
-
- [
- @foreach ($topic->topic_nodes as $node)
-{"id":{{$node->node_id}},"lesson":"{{$node->lesson_id}}"}
-   @if (!$loop->last)
-   ,
-   @endif
+@foreach ($topic->topic_nodes as $node)
+@isset($node->topic_node_condition->type)
+{{$node->node_id}},{{$node->lesson_id}},{{$node->topic_node_condition->type}},{{$node->topic_node_condition->value}}
+@else
+{{$node->node_id}},{{$node->lesson_id}}
+@endisset
 @endforeach
- ]
-
-
-
 </textarea>
 	
   </div>
@@ -54,26 +49,9 @@
   <div class="control">
  
 <textarea class="textarea" placeholder="Textarea" name="routes" id="routes">
-
-
- [
- @foreach ($topic->topic_routes() as $route)
- 
-
-		{"from":{{$route->from_node->node_id}},"to":{{$route->to_node->node_id}},"condition":"{{$route->condition}}"}
-		@if (!$loop->last )
-		,
-		@endif
-   
-
+@foreach ($topic->topic_routes() as $route)
+{{$route->from_node->node_id}}->{{$route->to_node->node_id}},{{$route->condition}}
 @endforeach
- ]
-
-
-
-
-
-
 </textarea>
 	
   </div>
@@ -156,33 +134,50 @@ function getLessonType(id)
 	return FALSE;
 }
 
+
+
+
 	
 function parse()
 {
-	var ugly = document.getElementById('nodes').value;
-    var obj = JSON.parse(ugly);
-    var pretty = JSON.stringify(obj, undefined, 4);
-    document.getElementById('nodes').value = pretty;
-
-	var ugly = document.getElementById('routes').value;
-    var obj = JSON.parse(ugly);
-    var pretty = JSON.stringify(obj, undefined, 4);
-    document.getElementById('routes').value = pretty;
-
-
-
-
-	var nodes ='';
-	var routes ='';
+	var nodes =[];
+	var routes =[];
 var graph="";
  try {
-	nodes=JSON.parse(document.getElementById('nodes').value);
-routes=JSON.parse(document.getElementById('routes').value);
+	data=document.getElementById('nodes').value.split('\n');
+
+
+
+
+for (var i = 0; i < data.length; i++) {
+
+	line=data[i].split(','); 
+	console.log(line.length);
+	console.log(line);
+  if(line.length==4)
+	nodes.push({"id":line[0],"lesson":line[1],"timeout":line[3]});
+  else if(line[0]!=null && line[1]!=null)
+	  nodes.push({"id":line[0],"lesson":line[1]});
+  
+}
 	for (var i = 0; i < nodes.length; i++) {
    graph+=nodes[i].id+' [shape='+getLessonType(nodes[i].lesson)+',label="'+getLessonName(nodes[i].lesson)+'"];\n';
-
 }
 
+
+	data=document.getElementById('routes').value.split('\n');
+for (var i = 0; i < data.length; i++) {
+
+
+var separators = ['->', ','];
+	line=data[i].split(new RegExp(separators.join('|'), 'g'));
+	
+  if(line.length==3)
+	routes.push({"from":line[0],"to":line[1],"condition":line[2]});
+  else if(line[0]!=null && line[1]!=null)
+	  routes.push({"from":line[0],"to":line[1],"condition":"none"});
+  
+}
 
 	for (var i = 0; i < routes.length; i++) {
 		if(routes[i].condition=='fail')
@@ -193,9 +188,9 @@ else if(routes[i].condition=='none')
 	 graph+=routes[i].from+'->'+routes[i].to+ ' [color=black];\n';
 }
 	 } catch(e) {
-    document.getElementById('error').appendChild("Erorr");
+    console.log(e);
     }
-console.log( graph);
+
 var viz = new Viz();
   viz.renderSVGElement('digraph { '+ graph+' }')
   .then(function(element) {

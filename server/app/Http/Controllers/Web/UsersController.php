@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\UserStatistic;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Password;
@@ -19,6 +20,16 @@ class UsersController extends Controller
     {
       return view('user.index', ['user' => User::findOrFail($id)]);
     }
+	
+		public function list()
+    {
+      return view('rating', [
+            'users' => UserStatistic::orderBy('total_score','DESC')->orderBy('labs_time_spend','ASC')->paginate(20)
+        ]);
+
+	
+    }
+	
 	
 	public function edit($id)
     {

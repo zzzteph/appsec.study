@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['prefix' => 'v1'], function () {
-        Route::get('/task','App\Http\Controllers\Api\TaskController@get' );
+        Route::get('/task/{id}','App\Http\Controllers\Api\TaskController@get' );
 
 });
 
