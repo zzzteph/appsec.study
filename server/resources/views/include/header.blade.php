@@ -61,7 +61,7 @@
         <a class="navbar-item">
 			<form method="POST"  action="{{route('user-vm-start')}}">
 				@csrf
-				<button class="button is-success">							
+				<button class="button is-primary">							
 				<span class="icon-text">
 					<span>Remote Desktop</span>
 					  <span class="icon">
@@ -77,7 +77,7 @@
 			<div id="uservm" class="navbar-item">
 				<div class="field is-grouped">
 					<p class="control">
-			<a class="button is-success" target="_blank" href="http://{{Auth::user()->user_vm()->ip}}:6080/?autoconnect=true&password=123456"> 
+			<a class="button is-primary" target="_blank" href="http://{{Auth::user()->user_vm()->ip}}:6080/?autoconnect=true&password=123456"> 
 				<span class="icon-text">
 				<span>Remote Desktop</span>
 				  <span class="icon">
@@ -149,7 +149,7 @@
 			@else
 			<a id="uservm" class="navbar-item">
 		
-			<button v-if="uservm.status =='todo' || uservm.status =='starting'" class="button is-success">
+			<button v-if="uservm.status =='todo' || uservm.status =='starting'" class="button is-primary">
 						<span class="icon-text">
 				  <span class="icon">
 					<i class="fas fa-spinner fa-spin"></i>
@@ -277,7 +277,7 @@
 	@if(!is_null(Auth::user()->current_user_lab_vm()) && Auth::user()->current_user_lab_vm()->status!="terminated")
 
 	<div id="timer"> 
-		  <a class="button is-success is-size-5 mr-3" href="{{route('view-lesson',[
+		  <a class="button is-primary is-size-5 mr-3" href="{{route('view-lesson',[
 		  'course_id'=>Auth::user()->current_user_lab_vm()->node()->topic->course->id,
 		  'topic_id'=>Auth::user()->current_user_lab_vm()->node()->topic->id,
 		  'node_id'=>Auth::user()->current_user_lab_vm()->node()->node_id

@@ -42,7 +42,7 @@
 							
 							
 							
-                            <button class="button is-block is-success is-large is-fullwidth">Create account <i class="fas fa-user-plus"></i></button>
+                            <button class="button is-block is-primary is-large is-fullwidth">Create account <i class="fas fa-user-plus"></i></button>
                         </form>
                     </div>
                     <p class="has-text-grey">

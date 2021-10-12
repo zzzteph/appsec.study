@@ -30,7 +30,7 @@
 							
 
 							  </div>
-                            <button class="button is-block is-success is-large is-fullwidth">Login <i class="fas fa-sign-in-alt"></i></button>
+                            <button class="button is-block is-primary is-large is-fullwidth">Login <i class="fas fa-sign-in-alt"></i></button>
                         </form>
 
 						
