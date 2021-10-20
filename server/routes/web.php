@@ -109,11 +109,11 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 
 
 	//users
-	Route::get('/user', [UsersAdminController::class, 'get'])->name('users');
-	Route::post('/user', [UsersAdminController::class, 'create'])->name('create-user');
-	Route::put('/user/{id}', [UsersAdminController::class, 'update'])->name('update-user');
-	Route::put('/user/{id}/reset', [UsersAdminController::class, 'reset'])->name('reset-user');
-	Route::delete('/user/{id}', [UsersAdminController::class, 'delete'])->name('delete-user');
+	Route::get('/user', [UsersAdminController::class, 'get'])->name('admin-users');
+	Route::post('/user', [UsersAdminController::class, 'create'])->name('admin-create-user');
+	Route::put('/user/{id}', [UsersAdminController::class, 'update'])->name('admin-update-user');
+	Route::put('/user/{id}/reset', [UsersAdminController::class, 'reset'])->name('admin-reset-user');
+	Route::delete('/user/{id}', [UsersAdminController::class, 'delete'])->name('admin-delete-user');
 
 	//general lessons administration
 	

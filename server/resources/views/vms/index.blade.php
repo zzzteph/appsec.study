@@ -27,9 +27,6 @@
     <p class="control is-expanded">
     <input class="input" name="cloud_id" type="text" placeholder="Cloud Id">
   </p>
-      <p class="control is-expanded">
-  <input class="input" name="size" type="text" name="size"  value="13958643712">
-   </p>
   <p class="control">
     <button class="button is-success">
       Create
@@ -47,7 +44,6 @@
 		    <th>Type</th>
 			<th>VM name</th>
 			<th>Cloud template</th>
-			<th>Size</th>
 			<th>Update</th>
 			<th>Delete</th>
 		</tr>
@@ -90,14 +86,6 @@
 				<td>
 				
 					<input class="input" name="cloud_id" type="text" name="cloud_id"  value="{{ $vm->cloud->template_id }}">
-				</td>
-				
-				<td>
-				@if(!empty( $vm->config->size))
-					<input class="input" name="size" type="text" name="size"  value="{{ $vm->config->size }}">
-				@else
-					<input class="input" name="size" type="text" name="size"  value="0">
-				@endif
 				</td>
 				
 				

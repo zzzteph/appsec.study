@@ -27,8 +27,7 @@ class VmsController extends Controller
 		$validated = $request->validate([
 			'name' => 'required',
 			'cloud_id' => 'required',
-			'type' => 'required',
-			'size' => 'required'
+			'type' => 'required'
 		]);
 		
 		$cloud=Cloud::first();
@@ -42,13 +41,7 @@ class VmsController extends Controller
 		$cloudVM->template_id=$request->input('cloud_id');
 		$cloudVM->cloud_id=$cloud->id;
 		$vm->cloud()->save($cloudVM);
-		$config=new VmConfig;
-			$config->size=$request->input('size');
-			$config->params="";
-			$config->vm_id=$vm->id;
-			$config->save();
-		
-		
+
 		return back();
 	}
 	
@@ -59,8 +52,7 @@ class VmsController extends Controller
 		
 			'name' => 'required',
 			'cloud_id' => 'required',
-			'type' => 'required',
-			'size' => 'required'
+			'type' => 'required'
 		]);
 		
 		$cloud=Cloud::first();
@@ -72,18 +64,6 @@ class VmsController extends Controller
 		$vm->save();
 		$vm->cloud->template_id=$request->input('cloud_id');
 		$vm->cloud->save();
-		if(is_null($vm->config)) {
-			$config=new VmConfig;
-			$config->size=$request->input('size');
-			$config->params="";
-			$config->vm_id=$vm->id;
-			$config->save();
-		}
-		else
-		{
-			$vm->config->size=$request->input('size');
-			$vm->config->save();
-		}
 		return back();
 	}
 	

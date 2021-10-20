@@ -22,7 +22,7 @@
 
 @endif
 
-<form method="POST" action="{{route('create-user')}}">
+<form method="POST" action="{{route('admin-create-user')}}">
 @csrf
 <div class="field is-grouped">
   <p class="control is-expanded">
@@ -61,7 +61,7 @@
 		   @foreach ($users as $user)
 		   <tr>
 		   
-		   <form method="POST" action="{{route('update-user',['id' => $user->id])}}">
+		   <form method="POST" action="{{route('admin-update-user',['id' => $user->id])}}">
 		   					@csrf
 					 @method('PUT')
 		
@@ -102,7 +102,7 @@
 				 </form>
 								<td>
 					
-						<form method="POST" action="{{route('reset-user',['id' => $user->id])}}">
+						<form method="POST" action="{{route('admin-reset-user',['id' => $user->id])}}">
 					@csrf
 					 @method('PUT')
 				
@@ -117,7 +117,7 @@
 				
 				
 				<td>
-									<form method="POST" action="{{route('delete-user',['id' => $user->id])}}">
+									<form method="POST" action="{{route('admin-delete-user',['id' => $user->id])}}">
 					@csrf
 					 @method('DELETE')
 				

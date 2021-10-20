@@ -182,16 +182,13 @@
 
 
         <div class="navbar-dropdown">
-
-
-		 <hr class="navbar-divider">
           <a class="navbar-item" href="{{route('cloud')}}">
             Cloud
           </a>
           <a class="navbar-item" href="{{route('vms')}}">
             VMS 
           </a>
-          <a class="navbar-item" href="{{route('users')}}">
+          <a class="navbar-item" href="{{route('admin-users')}}">
             Users
           </a>
 		  <a class="navbar-item" href="{{route('admin-user-vms')}}">

@@ -13,6 +13,7 @@ use App\Rest\Yandex\Operation\GetOperation;
 use App\Rest\Yandex\Instance\GetInstance;
 use App\Rest\Yandex\Instance\CreateInstance;
 use App\Rest\Yandex\Instance\DeleteInstance;
+use App\Rest\Yandex\Image\Get as GetImage;
 use App\Models\User;
 use App\Models\UserCloudVm;
 use App\Models\Cloud;
@@ -20,6 +21,7 @@ use App\Models\Vm;
 use App\Models\Iamtoken;
 use Illuminate\Support\Str;
 use App\Models\UserCloudVmLog;
+use App\Jobs\Yandex\ActionStop;
 class ActionStart implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -52,8 +54,22 @@ class ActionStart implements ShouldQueue
 		
 			$name="id-".$this->uservm->id."-template-".$this->uservm->template_id."-user-".$this->uservm->user_id."-".strtolower(Str::random(5));		
 			//get vm size
-			$vm=Vm::where('id',$this->uservm->vm_id)->first();
-			$size=$vm->config->size;
+			$image=new GetImage($this->uservm->template_id,$iamtoken->id);
+			$response=$image->execute();
+			$size=0;
+			if(isset($response->minDiskSize))
+			{
+				$size=$response->minDiskSize;
+			}
+			if($size==0)
+			{
+				$this->uservm->status="tostop";
+				$this->uservm->save();
+				ActionStop::dispatch($this->uservm)->onQueue('yandex');
+				
+				
+				return;
+			}
 			$info=new CreateInstance($this->cloud->folder_id,$name,$size,$this->uservm->template_id,$this->cloud->subnet_id,$this->cloud->zone_id,$this->cloud->platform_id,$iamtoken->id);//4294967296
 		
 			$response=$info->execute();
@@ -108,12 +124,12 @@ class ActionStart implements ShouldQueue
 						Bus::chain([new Timeout( $this->uservm, $this->cloud)])->onQueue('timeout')->dispatch($this->uservm,$this->cloud);
 						
 						return;
-}
+					}
 				}
 
 
 			}
-
+			ActionStop::dispatch($this->uservm)->onQueue('yandex');
 			
 			
 			
