@@ -143,7 +143,9 @@
                <input type="hidden" name="answer" value="yes">
                @endif
             </div>
-            <div class="field">
+            
+			@if( $question->type!='yes') 
+			<div class="field">
                <div class="control">
                   <button class="button is-success">
                   <span class="icon-text is-align-items-center">
@@ -155,6 +157,20 @@
                   </button>
                </div>
             </div>
+			@else
+			<div class="field">
+               <div class="control">
+                  <button class="button is-success">
+                  <span class="icon-text is-align-items-center">
+                  <span class="icon">
+                  <i class="fas fa-check-square"></i>
+                  </span>
+                  <span>Done!</span>
+                  </span>
+                  </button>
+               </div>
+            </div>
+			@endif
          </form>
       </div>
       @break
