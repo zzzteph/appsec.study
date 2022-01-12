@@ -1,0 +1,52 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: trysec
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: trysec
+    container_name: trysec-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - trysec-network
+
+  db:
+    image: mysql:5.7
+    container_name: trysec-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: trysec
+      MYSQL_ROOT_PASSWORD: trysec
+      MYSQL_PASSWORD: trysec
+      MYSQL_USER: trysec
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - trysec-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: trysec-nginx
+    restart: unless-stopped
+    ports:
+      - 80:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - trysec-network
+
+networks:
+  trysec-network:
+    driver: bridge
+volumes:
+  dbdata:
+    driver: local
