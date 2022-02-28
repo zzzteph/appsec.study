@@ -1,11 +1,11 @@
 @include('include.header')
+
 <section class="section pt-3">
    <div class="container">
       <nav class="breadcrumb" aria-label="breadcrumbs">
          <ul>
-            <li><a href="{{route('courses')}}">Courses</a></li>
-            <li><a href="{{route('topics',['id' => $course->id])}}">{{$course->name}}</a></li>
-            <li><a href="{{route('lessons',['course_id' => $course->id,'topic_id' => $topic->id])}}">{{$topic->name}}</a></li>
+
+            <li><a href="{{route('lessons',['topic_id' => $topic->id])}}">{{$topic->name}}</a></li>
             <li class="is-active"><a href="#" >{{$lesson->lab->name}}</a></li>
          </ul>
       </nav>
@@ -52,9 +52,6 @@
          </div>
          @elseif(!is_null($task) && ($task->topic_node_id==$node->id) &&  ($task->status=='running'))
          <div class="block" id="app">
-            @if($lesson->lab->vm->type=='code')
-            <div class="content"><a href="http://{{$task->ip}}:8081" class="button is-success is-fullwidth" target="_blank"> Edit code </a></div>
-            @endif
             <div class="content">
                <p><a href="http://{{$task->ip}}" class="button is-success is-fullwidth" target="_blank"> Open Lab</a></p>
             </div>
@@ -117,10 +114,25 @@
       <li>{{$answer->answer}}</li>
       @endforeach
       @endif
+	  
+	  		 @if($question->hints()->count()>0)
+		 <hr/>
+		 <p><strong>Hints</strong></p>
+		@foreach ($question->hints as $hint)
+		 
+		 @if($hint->bought==TRUE)
+		 
+		  <p>{!! $hint->hint !!}</p>
+		 @endif
+		@endforeach	 
+
+		  @endif
+	  
+	  
 	  </div>
       @elseif(!$question->correct($node->user_topic_node->id) && ($node->status!='success' && $node->status!='fail'))
       <div class="content box">
-         <form method="POST" action="{{route('question-answer',['course_id' => $course->id,'topic_id' => $topic->id,'node_id' => $node->node_id])}}">
+         <form method="POST" action="{{route('question-answer',['topic_id' => $topic->id,'node_id' => $node->node_id])}}">
             @csrf
             <input type="hidden" name="question_id" value="{{$question->id}}">
             <div class="field">
@@ -172,6 +184,45 @@
             </div>
 			@endif
          </form>
+		 @if($question->hints()->count()>0)
+		 <hr/>
+		 <p><strong>Hints</strong></p>
+		@foreach ($question->hints as $hint)
+		 
+		 @if($hint->bought==TRUE)
+		 
+		 <p>{!! $hint->hint !!}</p>
+		 @endif
+		@endforeach	 
+		 
+		@foreach ($question->hints as $hint)
+		 
+		 @if($hint->bought!=TRUE)
+		  <form method="POST" action="{{route('question-hint',['topic_id' => $topic->id,'node_id' => $node->node_id,'question_id'=>$question->id,'hint_id'=>$hint->id])}}">
+            @csrf
+
+		
+		 <button class="button is-success">
+		          <span class="icon-text is-align-items-center">
+ 
+                  <span> {{$hint->price/100}}</span>
+				  
+				   <span class="icon">
+					<i class="fas fa-coins"></i>
+                  </span>
+				  
+                  </span>
+		 
+
+		 </button>
+			</form>
+		  @endif
+		@endforeach	 
+		  @endif
+		 
+		 
+		 
+		
       </div>
       @break
       @endif

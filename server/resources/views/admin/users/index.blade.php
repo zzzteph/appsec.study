@@ -22,24 +22,6 @@
 
 @endif
 
-<form method="POST" action="{{route('admin-create-user')}}">
-@csrf
-<div class="field is-grouped">
-  <p class="control is-expanded">
-    <input class="input" name="name" type="text" placeholder="User name">
-  </p>
- <p class="control is-expanded">
-    <input class="input" name="email" type="email" placeholder="Email">
-  </p>
-  <p class="control">
-    <button class="button is-success">
-      Create
-    </a>
-  </p>
-</div>
-
-</form>
-
 
 
 <table class="table is-fullwidth">
@@ -47,10 +29,8 @@
 		<tr>
 			<th>Name</th>
 			<th>Email</th>
-			<th>Password</th>
 			<th>Role</th>
-			<th>Confirmed</th>
-			<th></th>
+
 			<th></th>
 			<th></th>
 		</tr>
@@ -74,9 +54,6 @@
 					<input class="input" type="email"  name="email" value="{{ $user->email }}">
 				</td>
 				
-				<td>	
-					<input class="input" type="password"  name="password">
-				</td>
 				
 				
 				<td>	
@@ -84,13 +61,6 @@
 
 				</td>
 
-				<td>
-					@empty ($user->email_verified_at)
-					  <input type="checkbox" name="confirmed">
-					@else
-					 <input type="checkbox" name="confirmed" checked>
-					 @endempty
-				</td>
 
 
 				<td>
@@ -100,20 +70,6 @@
 					
 				</td>
 				 </form>
-								<td>
-					
-						<form method="POST" action="{{route('admin-reset-user',['id' => $user->id])}}">
-					@csrf
-					 @method('PUT')
-				
-					 <button class="button is-warning">Reset</button>
-					 </form>
-					
-					
-
-					
-					
-				</td>
 				
 				
 				<td>

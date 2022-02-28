@@ -21,16 +21,14 @@ class UserCloudVm extends Model
     {
         static::created(function ($entry) {
 			
-				event(new UserStatisticsChange(User::find($entry->user_id)));
+			event(new UserStatisticsChange(User::find($entry->user_id)));
         });
 		
 		static::updated(function ($entry) {
+			if($entry->status=='terminated' || $entry->status=='running')
 			event(new UserStatisticsChange(User::find($entry->user_id)));
-			$log=new UserCloudVmLog;
-			$log->type='action';
-			$log->message=$entry->status."   ".$entry->progress;
-			$entry->user_cloud_vm_logs()->save($log);
-			
+
+
         });
     }
 
@@ -39,22 +37,7 @@ class UserCloudVm extends Model
 		return TopicNode::find($this->topic_node_id);
     }
 
-	public function getSizeAttribute()
-    {
-		
-		return LabLesson::find($this->lab_lesson_id)->vm->vm_config->size;
-    }
 
-	public function getParamAttribute()
-    {
-		return LabLesson::find($this->lab_lesson_id)->vm->vm_config->param; 
-    }
-
-
-		public function user_cloud_vm_logs()
-    {
-        return $this->hasMany(UserCloudVmLog::class);
-    }
 
 	
 		public function getTimeoutAttribute()

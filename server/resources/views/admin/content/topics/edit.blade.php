@@ -1,13 +1,17 @@
 @include('include.header')
 
+  <script>
+    tinymce.init({
+      selector: '#description',
+	    plugins: 'code',
 
+    });
+  </script>
 	 <section class="section">
 		 <div class="container">
      <nav class="breadcrumb" aria-label="breadcrumbs">
 		  <ul>
-		    <li><a href="{{route('admin-view-courses')}}">Courses</a></li>
-			<li><a href="#">{{$course->name}}</a></li>
-			<li class="is-active"><a href="{{route('lessons',['course_id' => $course->id,'topic_id' => $topic->id])}}">{{$topic->name}}</a></li>
+			<li class="is-active"><a href="{{route('lessons',['topic_id' => $topic->id])}}">{{$topic->name}}</a></li>
 		  </ul>
 	</nav>
 	
@@ -19,7 +23,7 @@
 
 
 
-<form method="POST" action="{{route('admin-update-topic',['course_id' => $course->id,'topic_id' => $topic->id])}}">
+<form method="POST" action="{{route('admin-update-topic',['topic_id' => $topic->id])}}">
   @method('PUT')
   @csrf
 
@@ -37,7 +41,7 @@
   <label class="label">Description</label>
   <div class="control">
  
-<textarea class="textarea" placeholder="Textarea" name="description">{{$topic->description}}</textarea>
+<textarea class="textarea" placeholder="Textarea" id="description" name="description">{{$topic->description}}</textarea>
 	
   </div>
 </div>
@@ -80,7 +84,7 @@
 
   </div>
   <div class="message-body">
-			<form method="POST" action="{{route('admin-delete-topic',['course_id' => $course->id,'topic_id' => $topic->id])}}">
+			<form method="POST" action="{{route('admin-delete-topic',['topic_id' => $topic->id])}}">
 			@csrf
 			 @method('DELETE')
 			<button class="button is-danger is-fullwidth">Delete topic</button>

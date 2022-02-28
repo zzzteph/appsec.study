@@ -10,14 +10,6 @@
 @csrf
 <div class="field is-grouped">
 
-   <p class="control">
-<div class="select">
-  <select name="type">
-    <option value="lab" selected>lab</option>
-	 <option value="code">code</option>
-  </select>
-</div>
-  </p>
 
   <p class="control is-expanded">
     <input class="input" name="name" type="text" placeholder="VM Name">
@@ -25,7 +17,7 @@
   
 
     <p class="control is-expanded">
-    <input class="input" name="cloud_id" type="text" placeholder="Cloud Id">
+    <input class="input" name="image" type="text" placeholder="Cloud Image">
   </p>
   <p class="control">
     <button class="button is-success">
@@ -41,7 +33,7 @@
 <table class="table is-fullwidth">
 	<thead>
 		<tr>
-		    <th>Type</th>
+		   
 			<th>VM name</th>
 			<th>Cloud template</th>
 			<th>Update</th>
@@ -57,25 +49,7 @@
 		   <form method="POST" action="{{route('update-vms',['id' => $vm->id])}}">
 		   					@csrf
 					 @method('PUT')
-		
-				<td>
-				<div class="select">
-  <select name="type">
-	@if($vm->type=="lab")
-    <option value="lab" selected>lab</option>
-	@else 
-	<option value="lab">lab</option>
-	@endif
-	
-	@if($vm->type=="code")
-	 <option value="code" selected>code</option>
- @else 
-	<option value="code">code</option>
-	@endif
-  </select>
-</div>
-				
-				</td>
+
 		
 		
 				<td>
@@ -85,7 +59,7 @@
 				</td>
 				<td>
 				
-					<input class="input" name="cloud_id" type="text" name="cloud_id"  value="{{ $vm->cloud->template_id }}">
+					<input class="input" name="image" type="text" name="cloud_id"  value="{{ $vm->image }}">
 				</td>
 				
 				

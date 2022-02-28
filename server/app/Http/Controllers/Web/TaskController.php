@@ -16,22 +16,26 @@ use App\Models\Vm;
 use App\Models\LabLessonQuestion;
 use App\Models\UserCloudVm;
 use App\Models\Cloud;
-use App\Models\Iamtoken;
-use App\Jobs\Yandex\ActionStart;
-use App\Jobs\Yandex\ActionStop;
-use App\Jobs\Yandex\CheckRunning;
-use App\Jobs\Yandex\Timeout;
-use App\Rest\Yandex\Instance\GetInstance;
-use App\Rest\Yandex\Instance\CreateInstance;
-use App\Rest\Yandex\Instance\DeleteInstance;
+use App\Models\ToolVm;
+use App\Models\UserToolVm;
+use App\Jobs\Google\ToolStart;
+use App\Jobs\Google\ToolStop;
+
+use App\Jobs\Google\ActionStart;
+use App\Jobs\Google\ActionStop;
+use App\Jobs\Google\CheckRunning;
+use App\Jobs\Google\Timeout;
+use App\Rest\Google\Instance\GetInstance;
+use App\Rest\Google\Instance\CreateInstance;
+use App\Rest\Google\Instance\DeleteInstance;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Bus;
 use Carbon\Carbon;
 class TaskController extends Controller
 {
-	
-	
+
+
 	function can_start()
 	{
 		$vms = UserCloudVm::where("user_id",Auth::id())->where('created_at', '>=', Carbon::now()->subDays(1)->toDateTimeString())->get();
@@ -41,7 +45,7 @@ class TaskController extends Controller
 				$count+=$vm->updated_at->diffInSeconds($vm->created_at);
 		}
 
-		//if($count>6*3600)return FALSE;
+		if($count>6*3600)return FALSE;
 		return TRUE;
 	}
 
@@ -63,31 +67,26 @@ class TaskController extends Controller
 		{
 			return redirect()->back()->withErrors('You have no access to this lesson');
 		}
-		
 
-		$cloud=Cloud::where('type','yandex')->where('enabled',TRUE)->first();
+
+		$cloud=Cloud::first();
 		if($cloud===null)
 		{
 			return redirect()->back()->withErrors('Unable to start task. Unable to locate cloud');
 		}
-		
+
 		if(!$this->can_start())
 		{
 				return redirect()->back()->withErrors('You worked pretty hard. Please wait until tomorrow');
 		}
 
-		
+
 		if(Auth::user()->current_user_lab_vm()==null)
-		{		
-			if(UserCloudVm::where('status','!=', 'terminated')->count()>=$cloud->vms_count)
-			{
-				return redirect()->back()->withErrors('Unable to start task'.$cloud->vms_count);
-			}
-
-
+		{
+			
 				$userLabVm=new UserCloudVm;
 				$userLabVm->user_id=Auth::user()->id;
-				$userLabVm->template_id=$lab_lesson->vm->template_id;
+				$userLabVm->template_id=$lab_lesson->vm->image;
 				$userLabVm->topic_node_id=$node->id;
 				$userLabVm->vm_id=$lab_lesson->vm->id;
 				$userLabVm->ip="";
@@ -95,17 +94,17 @@ class TaskController extends Controller
 				$userLabVm->cloud_id=$cloud->id;
 				$userLabVm->progress=0;
 				$userLabVm->save();
-				
-				Bus::chain([			new ActionStart($userLabVm,$cloud)		])->onQueue('yandex')->dispatch($userLabVm,$cloud);
 
-			
+				Bus::chain([			new ActionStart($userLabVm,$cloud)		])->onQueue('google')->dispatch($userLabVm,$cloud);
+
+
 		}
-	
+
 		return redirect()->back();
-		
+
 	}
 
-	
+
 	public function stop(Request $request,$node_id)
 	{
 
@@ -124,15 +123,15 @@ class TaskController extends Controller
 		{
 			return redirect()->back()->withErrors('You have no access to this lesson');
 		}
-		
 
-		
+
+
 		$userLabVm=Auth::user()->current_user_lab_vm();
 		if($userLabVm==null)
 		{
 				return redirect()->back()->withErrors('Task not found');
 		}
-		
+
 		if($userLabVm->status!='running')
 		{
 			return redirect()->back()->withErrors('Task can not be stopped');
@@ -141,23 +140,21 @@ class TaskController extends Controller
 		$userLabVm->status="tostop";
 		$userLabVm->progress=100;
 		$userLabVm->save();
-		ActionStop::dispatch($userLabVm)->onQueue('yandex');
+		ActionStop::dispatch($userLabVm)->onQueue('google');
 		return redirect()->back();
-		
+
 	}
-
-
 
 
 	public function tools_start(Request $request)
 	{
-		$cloud=Cloud::where('type','yandex')->where('enabled',TRUE)->first();
+		$cloud=Cloud::first();
 		if($cloud===null)
 		{
 			return redirect()->back()->withErrors('Unable to start user vm. Unable to locate cloud');
 		}
-		$user_vm=Vm::where('type','user')->first();
-		if($user_vm==null)
+		$tool_vm=ToolVm::first();
+		if($tool_vm==null)
 		{
 			return redirect()->back()->withErrors('Unable to start user vm. No VM');
 		}
@@ -166,45 +163,34 @@ class TaskController extends Controller
 		{
 				return redirect()->back()->withErrors('You worked pretty hard. Please wait until tomorrow');
 		}
-		if(Auth::user()->user_vm()==null)
-		{		
-			if(UserCloudVm::where('status','!=', 'terminated')->count()>=$cloud->vms_count)
-			{
-				return redirect()->back()->withErrors('Unable to start VM'.$cloud->vms_count);
-			}
+		if(Auth::user()->tool_vm()==null)
+		{
+			$toolVm=new UserToolVm;
+			$toolVm->user_id=Auth::user()->id;
+			$toolVm->template_id=$tool_vm->name;
+			$toolVm->tool_vm_id=$tool_vm->id;
+			$toolVm->progress=0;
+			$toolVm->status="todo";
+			$toolVm->save();
 
-			$userLabVm=new UserCloudVm;
-			$userLabVm->user_id=Auth::user()->id;
-			$userLabVm->template_id=$user_vm->template_id;
-			$userLabVm->vm_id=$user_vm->id;
-			$userLabVm->topic_node_id=0;
-			$userLabVm->ip='';
-			$userLabVm->instance_id="";
-			$userLabVm->cloud_id=$cloud->id;
-			$userLabVm->type='user';
-			$userLabVm->progress=0;
-			$userLabVm->save();
-			
-			Bus::chain([new ActionStart($userLabVm,$cloud)		])->onQueue('yandex')->dispatch($userLabVm,$cloud);
-			
-		
+			ToolStart::dispatch($toolVm)->onQueue('google');
 		}
-	
+
 		return redirect()->back();
-		
+
 	}
 
-	
+
 	public function tools_stop(Request $request)
 	{
 
 
-		$user_vm=Auth::user()->user_vm();
+		$user_vm=Auth::user()->tool_vm();
 		if($user_vm==null)
 		{
 				return redirect()->back()->withErrors('VM cant be stopped');
 		}
-		
+
 		if($user_vm->status!='running')
 		{
 			return redirect()->back()->withErrors('Task can not be stopped');
@@ -213,20 +199,12 @@ class TaskController extends Controller
 		$user_vm->status="tostop";
 		$user_vm->progress=100;
 		$user_vm->save();
-		ActionStop::dispatch($user_vm)->onQueue('yandex');
+		ToolStop::dispatch($user_vm)->onQueue('google');
 		return redirect()->back();
-		
+
 	}
 
 
 
 
-
 }
-	
-	
-	
-	
-	
-	
-

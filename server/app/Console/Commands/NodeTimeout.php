@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\User;
-use App\Models\Course;
 use App\Models\Topic;
 use App\Models\Lesson;
 use App\Models\TopicNode;

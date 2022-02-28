@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-	@if(!is_null(Auth::user()->user_vm()) && Auth::user()->user_vm()->status!='terminated' && Auth::user()->user_vm()->status!='running')
+	@if(!is_null(Auth::user()->tool_vm()) && Auth::user()->tool_vm()->status!='terminated' && Auth::user()->tool_vm()->status!='running')
 		<script>
 
 	new Vue({
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		methods: {
 
 			getVM: function(event) {
-				axios.get('/api/v1/task/{{Auth::user()->user_vm()->id}}').then((response) => {
+				axios.get('/api/v1/tool').then((response) => {
 					this.uservm = response.data;
 					if (this.uservm.status == 'terminated' || this.uservm.status == 'running') {
 						document.location.reload(true);
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	@endif
 
-	@if(!is_null(Auth::user()->user_vm()) && Auth::user()->user_vm()->status=='running')
+	@if(!is_null(Auth::user()->tool_vm()) && Auth::user()->tool_vm()->status=='running')
 		<script>
 
 	new Vue({
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		methods: {
 
 			getVM: function(event) {
-				axios.get('/api/v1/task/{{Auth::user()->user_vm()->id}}').then((response) => {
+				axios.get('/api/v1/tool').then((response) => {
 					this.uservm = response.data;
 					if (this.uservm.status != 'running') {
 						document.location.reload(true);
@@ -190,14 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 <footer class="footer is-fixed-bottom">
    <div class="content has-text-centered">
-
-   <strong>AppsecStudy</strong> 2021-{{ now()->year }} <br/>
-
-   <p>
-   <strong>AppsecStudy</strong> - open-source elearning management system for information security.<br/>
-   Follow us <a href="https://github.com/zzzteph/appsec.study">https://github.com/zzzteph/appsec.study</a><br/>
-   
-   </p>
       <p>
          <span class="icon-text is-align-items-center">
          <a href="https://twitter.com/w34kp455">

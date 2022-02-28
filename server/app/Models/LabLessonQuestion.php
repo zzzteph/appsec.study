@@ -18,6 +18,14 @@ class LabLessonQuestion extends Model
     {
         return $this->hasMany(LabLessonQuestionAnswer::class);
     }
+	
+	
+			public function hints()
+    {
+        return $this->hasMany(LabLessonQuestionHint::class);
+    }
+	
+	
 	public function answer()
     {
         return $this->hasOne(LabLessonQuestionAnswer::class);

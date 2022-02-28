@@ -10,15 +10,19 @@ use App\Models\UserStatistic;
 use App\Models\UserCloudVm;
 use App\Models\UserTopicNode;
 use App\Models\UserLabLessonQuestion;
+use App\Models\UserLabLessonQuestionHint;
+
 use Carbon\Carbon;
 
-class RefreshUserStatistics
+class RefreshUserStatistics  implements ShouldQueue
 {
     /**
      * Create the event listener.
      *
      * @return void
      */
+	public $queue = 'listener';
+
     public function __construct()
     {
         //
@@ -79,10 +83,17 @@ class RefreshUserStatistics
 			}
 			
 		}
+		$hints=UserLabLessonQuestionHint::where('user_id',$user->id)->get();
+		$user_score=$score;
+		foreach($hints as $hint)
+		{
+			$user_score=$user_score-$hint->lab_lesson_question_hint->price;
+		}
+		
 		
 
 		
-			$user->user_statistic->score=$score;
+			$user->user_statistic->score=$user_score;
 			$user->user_statistic->total_score=$score;
 			$user->user_statistic->save();
     }

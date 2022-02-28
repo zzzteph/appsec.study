@@ -34,7 +34,6 @@ class TheoryLessonController extends Controller
 		
 		$validated = $request->validate([
 			'name' => 'required',
-			'header' => 'required',
 			'content' => 'required'
 		]);
 		
@@ -55,7 +54,7 @@ class TheoryLessonController extends Controller
 			$lesson->published=FALSE;
 
 		$lesson->type='theory';
-		$lesson->theory->header=$request->input('header');
+		$lesson->theory->header=$request->input('name');
 		$lesson->theory->content=$request->input('content');
 		$lesson->theory->cancel=FALSE;
 			if($request->filled('cancel'))
@@ -77,7 +76,6 @@ class TheoryLessonController extends Controller
 
 		$validated = $request->validate([
 			'name' => 'required',
-			'header' => 'required',
 			'content' => 'required'
 		]);
 		
@@ -101,7 +99,7 @@ class TheoryLessonController extends Controller
 		$lesson->save();
 		
 		$theoryLesson=new TheoryLesson;
-		$theoryLesson->header=$request->input('header');
+		$theoryLesson->header=$request->input('name');
 		$theoryLesson->content=$request->input('content');
 		$theoryLesson->cancel=FALSE;
 			if($request->filled('cancel'))

@@ -32,7 +32,6 @@ class LabLessonController extends Controller
 
 		$validated = $request->validate([
 			'name' => 'required',
-			'lab_name' => 'required',
 			'content' => 'required',
 			'vm' => 'required'
 		]);
@@ -56,7 +55,7 @@ class LabLessonController extends Controller
 		
 		$lesson->type='lab';
 		
-		$lesson->lab->name=$request->input('lab_name');
+		$lesson->lab->name=$request->input('name');
 		$lesson->lab->content=$request->input('content');
 		$lesson->lab->vm_id=$vm->id;
 		$lesson->save();
@@ -70,7 +69,6 @@ class LabLessonController extends Controller
 		
 		$validated = $request->validate([
 			'name' => 'required',
-			'lab_name' => 'required',
 			'content' => 'required',
 			'vm' => 'required'
 		]);
@@ -96,7 +94,7 @@ class LabLessonController extends Controller
 		$lesson->save();
 		
 		$labLesson=new LabLesson;
-		$labLesson->name=$request->input('lab_name');
+		$labLesson->name=$request->input('name');
 		$labLesson->content=$request->input('content');
 		$labLesson->vm_id=$vm->id;
 

@@ -29,29 +29,21 @@
 
 <hr/>
 	
-	
-	
 
-<div class="field">
-  <label class="label">Header</label>
-  <div class="control">
-		<input class="input" type="text" placeholder="Theory header" name="header" value="{{$lesson->theory->header}}">
-  </div>
-</div>
 
 
 <div class="field">
   <label class="label">Content</label>
   <div class="control">
  
-<textarea class="textarea" placeholder="Textarea" name="content">{{$lesson->theory->content}}</textarea>
+<textarea class="textarea" placeholder="Textarea" id="content" name="content">{{$lesson->theory->content}}</textarea>
 	
   </div>
 </div>
 
 
 <div class="field">
-  <label class="label">Scope</label>
+  <label class="label">Score</label>
   <div class="control">
 		<input class="input" type="text" placeholder="100" name="score" value="{{$lesson->theory->score}}">
   </div>

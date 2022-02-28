@@ -11,53 +11,52 @@ use Illuminate\Support\Facades\Storage;
 class TopicsController extends Controller
 {
 	
-	public function list($course_id)
+	public function list()
     {
-		$course=Course::findOrFail($course_id);
-		$topics=Topic::where('course_id', $course_id)->orderBy('order', 'asc')->get();
+		
+		$topics=Topic::orderBy('order', 'asc')->get();
 
-		return view('admin.content.topics.list',['course'=>$course,'topics'=>$topics]);
+		return view('admin.content.topics.list',['topics'=>$topics]);
     }
 	
-	public function new($course_id)
+	public function new()
     {
-		return view('admin.content.topics.new',['course' =>Course::findOrFail($course_id)]);
+		return view('admin.content.topics.new');
     }
 	
 	
 	
-	public function edit($course_id,$topic_id)
+	public function edit($topic_id)
     {
-		return view('admin.content.topics.edit',['course' =>Course::findOrFail($course_id),'topic' =>Topic::findOrFail($topic_id)]);
+		return view('admin.content.topics.edit',['topic' =>Topic::findOrFail($topic_id)]);
     }
 	
 	
-	public function update(Request $request,$course_id,$topic_id)
+	public function update(Request $request,$topic_id)
 	{
-		$course=Course::findOrFail($course_id);
+	
 		$topic=Topic::findOrFail($topic_id);
 		if (!$request->filled('name')) 
 		 return back()->withErrors([
             'message' => 'You must set at least the name',
         ]);
 
-				return $this->modify($request,$course,$topic);
+				return $this->modify($request,$topic);
 
 	}
 	
 	
-	public function create(Request $request,$course_id)
+	public function create(Request $request)
 	{
-		$course=Course::findOrFail($course_id);
 		if (!$request->filled('name')) 
 		 return back()->withErrors([
             'message' => 'You must set at least the name',
         ]);
 		$topic=new Topic;
-		return $this->modify($request,$course,$topic);
+		return $this->modify($request,$topic);
 	}
 	
-	private function modify(Request $request, $course,$topic)
+	private function modify(Request $request, $topic)
 	{
 		
 		if($request->filled('name'))
@@ -68,42 +67,39 @@ class TopicsController extends Controller
 			$topic->published=TRUE;
 		else
 		$topic->published=FALSE;
-		$topic->course_id=$course->id;
 		$topic->save();
-		return redirect()->route('admin-list-topics', ['course_id' => $course->id]);
+		return redirect()->route('admin-list-topics');
 
 	}
 
 
-	public function delete(Request $request,$course_id,$topic_id)
+	public function delete(Request $request,$topic_id)
 	{	
-		Course::findOrFail($course_id);
 		 Topic::where('id', $topic_id)->delete();
-		return redirect()->route('admin-list-topics', ['course_id' => $course_id]);
+		return redirect()->route('admin-list-topics');
 	}
 
 	
 	
-	public function decrease($course_id,$topic_id)
+	public function decrease($topic_id)
 	{
-		$course=Course::findOrFail($course_id);
 		$topic=Topic::findOrFail($topic_id);
 		if($topic->order>0)
 		$topic->order=$topic->order-1;
 		
 		$topic->save();
-		return redirect()->route('admin-list-topics', ['course_id' => $course_id]);
+		return redirect()->route('admin-list-topics');
 	}
 
 	
-	public function increase($course_id,$topic_id)
+	public function increase($topic_id)
 	{
-		$course=Course::findOrFail($course_id);
+		
 		$topic=Topic::findOrFail($topic_id);
 		$topic->order=$topic->order+1;
 		
 		$topic->save();
-		return redirect()->route('admin-list-topics', ['course_id' => $course_id]);
+		return redirect()->route('admin-list-topics');
 	}
 
 }

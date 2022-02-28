@@ -1,7 +1,6 @@
 @include('include.header')
 
 
-
 	 <section class="section">
 		 <div class="container">
 
@@ -29,21 +28,12 @@
 <hr/>
 	
 	
-	
-
-<div class="field">
-  <label class="label">Header</label>
-  <div class="control">
-		<input class="input" type="text" placeholder="Theory header" name="header" value="">
-  </div>
-</div>
-
 
 <div class="field">
   <label class="label">Content</label>
   <div class="control">
  
-<textarea class="textarea" placeholder="Textarea" name="content"></textarea>
+<textarea class="textarea" placeholder="Textarea" id="content" name="content"></textarea>
 	
   </div>
 </div>

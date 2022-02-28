@@ -67,6 +67,14 @@
 	</strong>
 	  
 	  </p>
+	  
+	  	  <p>
+			@foreach ($question->hints as $hint)
+				<p>{{$hint->hint}}:<strong>{{$hint->price}}</strong></p>
+			@endforeach	  
+		  </p>
+	  <p><a class="button is-success is-small" href="{{route('admin-list-lab-lesson-question-hints',['question_id'=>$question->id])}}">Manage hints</a></p>
+	  
 	  <p>
 	  
 	  <form method="POST" action="{{route('admin-delete-lab-lesson-questions',['id'=>$lesson->lesson_id,'question_id'=>$question->id])}}">@method('DELETE')@csrf<button class="button is-small is-danger">delete</button></form>

@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Course;
 use App\Models\Topic;
 use App\Models\Lesson;
 use App\Models\TheoryLesson;
@@ -36,7 +35,7 @@ class LessonsController extends Controller
 	public function delete(Request $request,$id)
 	{	
 		 Lesson::findOrFail($id)->delete();
-		 return redirect()->route('admin-view-lesson');
+		 return redirect()->route('admin-view-lessons');
 	}
 
 }

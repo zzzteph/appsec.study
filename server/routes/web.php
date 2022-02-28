@@ -17,15 +17,14 @@ use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\UserVmsController;
 
 
- 
-use App\Http\Controllers\Web\Admin\CoursesController as AdminCourse;
 use App\Http\Controllers\Web\Admin\TopicsController as AdminTopics;
+use App\Http\Controllers\Web\Admin\ToolsController;
 use App\Http\Controllers\Web\Admin\NodesController as AdminNodes;
 use App\Http\Controllers\Web\Admin\LessonsController as AdminLesson;
 use App\Http\Controllers\Web\Admin\TheoryLessonController as AdminTheory;
 use App\Http\Controllers\Web\Admin\LabLessonController as AdminLabLesson;
 use App\Http\Controllers\Web\Admin\LabLessonQuestionController as AdminLessonLabLessonQuestion;
-
+use App\Http\Controllers\Web\Admin\LabLessonQuestionHintController as AdminLessonLabLessonQuestionHint;
 use App\Http\Controllers\VerifyController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Password;
@@ -54,29 +53,21 @@ use App\Http\Middleware\AdminAccess;
 
 Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function () {
 
-    Route::get('/courses',[AdminCourse::class, 'list'])->name('admin-view-courses');
-	Route::get('/courses/new',[AdminCourse::class, 'new'])->name('admin-new-course');
-	Route::get('/courses/{id}',[AdminCourse::class, 'edit'])->name('admin-edit-course');
-	Route::post('/courses', [AdminCourse::class, 'create'])->name('admin-add-new-course');
-	Route::put('/courses/{id}', [AdminCourse::class, 'update'])->name('admin-update-course');
-	Route::delete('/courses/{id}', [AdminCourse::class, 'delete'])->name('admin-delete-course');
-
-
-	Route::get('/courses/{course_id}/topics', [AdminTopics::class, 'list'])->name('admin-list-topics');
-	Route::get('/courses/{course_id}/topics/new', [AdminTopics::class, 'new'])->name('admin-new-topic');
-	Route::get('/courses/{course_id}/topics/{topic_id}',[AdminTopics::class, 'edit'])->name('admin-edit-topic');
-	Route::post('/courses/{course_id}/topics', [AdminTopics::class, 'create'])->name('admin-add-new-topic');
-	Route::put('/courses/{course_id}/topics/{topic_id}', [AdminTopics::class, 'update'])->name('admin-update-topic');
-	Route::put('/courses/{course_id}/topics/{topic_id}/increase', [AdminTopics::class, 'increase'])->name('admin-update-topic-order-increase');
-	Route::put('/courses/{course_id}/topics/{topic_id}/decrease', [AdminTopics::class, 'decrease'])->name('admin-update-topic-order-decrease');
-	Route::delete('/courses/{course_id}/topics/{topic_id}', [AdminTopics::class, 'delete'])->name('admin-delete-topic');
+	Route::get('topics', [AdminTopics::class, 'list'])->name('admin-list-topics');
+	Route::get('topics/new', [AdminTopics::class, 'new'])->name('admin-new-topic');
+	Route::get('topics/{topic_id}',[AdminTopics::class, 'edit'])->name('admin-edit-topic');
+	Route::post('topics', [AdminTopics::class, 'create'])->name('admin-add-new-topic');
+	Route::put('topics/{topic_id}', [AdminTopics::class, 'update'])->name('admin-update-topic');
+	Route::put('topics/{topic_id}/increase', [AdminTopics::class, 'increase'])->name('admin-update-topic-order-increase');
+	Route::put('topics/{topic_id}/decrease', [AdminTopics::class, 'decrease'])->name('admin-update-topic-order-decrease');
+	Route::delete('topics/{topic_id}', [AdminTopics::class, 'delete'])->name('admin-delete-topic');
 
 
 
 	//node controller
 	
-	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [AdminNodes::class, 'get'])->name('admin-nodes');
-	Route::put('courses/{course_id}/topics/{topic_id}/lessons', [AdminNodes::class, 'update'])->name('admin-nodes-update');
+	Route::get('topics/{topic_id}/lessons', [AdminNodes::class, 'get'])->name('admin-nodes');
+	Route::put('topics/{topic_id}/lessons', [AdminNodes::class, 'update'])->name('admin-nodes-update');
 
 
 
@@ -89,7 +80,8 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	//admin cloud-tasks monitor
 	Route::get('/cloud/tasks', [CloudController::class, 'monitor'])->name('monitor-task');
 	Route::put('/cloud/tasks/{task_id}', [CloudController::class, 'update_cloud_task'])->name('update-cloud-task');
-
+	Route::get('/cloud/tools', [CloudController::class, 'monitor_tools'])->name('monitor-tool');
+	Route::put('/cloud/tools/{task_id}', [CloudController::class, 'update_tool_task'])->name('update-tool-task');
 
 
 
@@ -101,10 +93,10 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 
 	//userVMS management
 
-	Route::get('/user/vms', [UserVmsController::class, 'admin_get'])->name('admin-user-vms');
-	Route::post('/user/vms', [UserVmsController::class, 'create'])->name('admin-create-user-vms');
-	Route::put('/user/vms', [UserVmsController::class, 'update'])->name('admin-update-user-vms');
-	Route::delete('/user/vms', [UserVmsController::class, 'delete'])->name('admin-delete-user-vms');
+	Route::get('/tools', [ToolsController::class, 'get'])->name('admin-tools');
+	Route::post('/tools', [ToolsController::class, 'create'])->name('create-admin-tools');
+	Route::put('/tools', [ToolsController::class, 'update'])->name('update-admin-tools');
+	Route::delete('/tools', [ToolsController::class, 'delete'])->name('delete-admin-tools');
 
 
 
@@ -139,7 +131,7 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 
 
 	//admin general delete
-	Route::delete('/courses/{course_id}/topics/{topic_id}/lesson/{lesson_id}', [LessonsController::class, 'delete'])->name('delete-lesson');
+	Route::delete('topics/{topic_id}/lesson/{lesson_id}', [LessonsController::class, 'delete'])->name('delete-lesson');
 	
 	
 	
@@ -155,33 +147,42 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	Route::put('lessons/lab/{id}/questions/{question_id}/inc', [AdminLessonLabLessonQuestion::class, 'increase'])->name('admin-inc-order-lab-lesson-questions');
 	Route::put('lessons/lab/{id}/questions/{question_id}/dec', [AdminLessonLabLessonQuestion::class, 'decrease'])->name('admin-dec-order-lab-lesson-questions');
 
+	//admin hints
+	Route::get('/questions/{question_id}/hints', [AdminLessonLabLessonQuestionHint::class, 'list'])->name('admin-list-lab-lesson-question-hints');
+	Route::get('/questions/{question_id}/hints/new', [AdminLessonLabLessonQuestionHint::class, 'new'])->name('admin-new-lab-lesson-question-hints');
+	Route::get('/questions/{question_id}/hints/{hint_id}', [AdminLessonLabLessonQuestionHint::class, 'edit'])->name('admin-edit-lab-lesson-question-hints');
+	Route::post('/questions/{question_id}/hints', [AdminLessonLabLessonQuestionHint::class, 'create'])->name('admin-create-lab-lesson-question-hints');
+	Route::put('/questions/{question_id}/hints/{hint_id}', [AdminLessonLabLessonQuestionHint::class, 'update'])->name('admin-update-lab-lesson-question-hints');
+	Route::delete('/questions/{question_id}/hints/{hint_id}', [AdminLessonLabLessonQuestionHint::class, 'delete'])->name('admin-delete-lab-lesson-question-hints');
+	Route::put('/questions/{question_id}/hints/{hint_id}/inc', [AdminLessonLabLessonQuestionHint::class, 'increase'])->name('admin-inc-order-lab-lesson-question-hints');
+	Route::put('/questions/{question_id}/hints/{hint_id}/dec', [AdminLessonLabLessonQuestionHint::class, 'decrease'])->name('admin-dec-order-lab-lesson-question-hints');
 
 });
 
 Route::middleware(['auth','verified'])->group(function () {
-	Route::get('courses', [CoursesController::class, 'list'])->name('courses');
-	Route::get('courses/{id}',[TopicsController::class, 'list'])->name('topics');
-	Route::get('courses/{id}/topics',[TopicsController::class, 'list'])->name('topics');
-	Route::get('courses/{course_id}/topics/{topic_id}', [NodesController::class, 'list'])->name('lessons');
-	
-	Route::get('courses/{course_id}/topics/{topic_id}/lessons', [NodesController::class, 'list'])->name('lessons');
 
-	Route::get('courses/{course_id}/topics/{topic_id}/lessons/{node_id}', [NodesController::class, 'view'])->name('view-lesson');
+	Route::get('topics',[TopicsController::class, 'list'])->name('topics');
+	Route::get('topics/{topic_id}', [NodesController::class, 'list'])->name('lessons');
+	
+	Route::get('topics/{topic_id}/lessons', [NodesController::class, 'list'])->name('lessons');
+
+	Route::get('topics/{topic_id}/lessons/{node_id}', [NodesController::class, 'view'])->name('view-lesson');
 	
 //actions
-	Route::put('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
-	Route::put('courses/{course_id}/topics/{topic_id}/lessons/{lesson_id}/cancel', [TheoryLessonController::class, 'mark_as_canceled'])->name('mark-theory-as-canceled');
+	Route::put('topics/{topic_id}/lessons/{lesson_id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
+	Route::put('topics/{topic_id}/lessons/{lesson_id}/cancel', [TheoryLessonController::class, 'mark_as_canceled'])->name('mark-theory-as-canceled');
 	
 	
 	
-	Route::post('courses/{course_id}/topics/{topic_id}/lessons/{node_id}', [LabLessonQuestionController::class, 'answer'])->name('question-answer');
+	Route::post('topics/{topic_id}/lessons/{node_id}', [LabLessonQuestionController::class, 'answer'])->name('question-answer');
+	Route::post('topics/{topic_id}/lessons/{node_id}/{question_id}/{hint_id}', [LabLessonQuestionController::class, 'hint'])->name('question-hint');
 	//tasks
 	Route::post('/task/{node_id}', [TaskController::class, 'start'])->name('start-task');
 	Route::delete('/task/{node_id}', [TaskController::class, 'stop'])->name('stop-task');
 	//user vms
 
-	Route::post('/tools', [TaskController::class, 'tools_start'])->name('user-vm-start');
-	Route::delete('/tools', [TaskController::class, 'tools_stop'])->name('user-vm-stop');
+	Route::post('/tools', [TaskController::class, 'tools_start'])->name('user-tool-start');
+	Route::delete('/tools', [TaskController::class, 'tools_stop'])->name('user-tool-stop');
 	//user pages
 	Route::get('users/{id}/edit',[UsersController::class, 'edit'])->name('edit-user-page');
 	Route::put('users/{id}',[UsersController::class, 'update'])->name('update-user-page');
@@ -205,60 +206,7 @@ Route::get('/auth/{driver}/redirect', function (Request $request, $driver) {
 
 Route::get('/auth/{driver}/callback',[AuthController::class, 'social_login']);
 
-Route::get('/forgot-password', function () {
-    return view('auth.forgot-password');
-})->name('password.request');
-
-Route::post('/forgot-password', function (Request $request) {
-    $request->validate(['email' => 'required|email']);
-
-    $status = Password::sendResetLink(
-        $request->only('email')
-    );
-
-    return $status === Password::RESET_LINK_SENT
-                ? back()->with(['success' => __($status)])
-                : back()->withErrors(['email' => __($status)]);
-})->name('password.email');
-
-Route::get('/reset-password/{token}', function ($token) {
-    return view('auth.reset-password', ['token' => $token]);
-})->name('password.reset');
-
-
-Route::post('/reset-password', function (Request $request) {
-    $request->validate([
-        'token' => 'required',
-        'email' => 'required|email',
-        'password' => 'required|min:8|confirmed',
-    ]);
-
-    $status = Password::reset(
-        $request->only('email', 'password', 'password_confirmation', 'token'),
-        function ($user, $password) use ($request) {
-            $user->forceFill([
-                'password' => Hash::make($password)
-            ])->setRememberToken(Str::random(60));
-
-            $user->save();
-
-            event(new PasswordReset($user));
-        }
-    );
-
-    return $status == Password::PASSWORD_RESET
-                ? redirect()->route('login')->with('success', __($status))
-                : back()->withErrors(['email' => [__($status)]]);
-})->name('password.update');
 
 
 
-Route::get('/email/verify/{id}/{hash}',[VerifyController::class, 'verify'])->name('verification.verify');
-Route::get('/email/verify', function () {    return view('auth.verify-email');})->middleware('auth')->name('verification.notice');
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-    return back()->with('success', 'Verification link sent!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
-
-
-Route::get('/', function () {   return redirect()->route('courses');})->name('main');
+Route::get('/', function () {   return redirect()->route('topics');})->name('main');

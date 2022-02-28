@@ -8,7 +8,10 @@ use App\Models\User;
 use App\Models\Course;
 use App\Models\Cloud;
 use App\Models\UserCloudVm;
-use App\Jobs\Yandex\ActionStop;
+use App\Models\UserToolVm;
+use App\Jobs\Google\ActionStop;
+use App\Jobs\Google\ToolStart;
+use App\Jobs\Google\ToolStop;
 use Illuminate\Support\Facades\Storage;
 class CloudController extends Controller
 {
@@ -21,6 +24,17 @@ class CloudController extends Controller
 	
     }
 	
+		public function monitor_tools()
+    {
+      return view('admin.cloud.tools.monitor', [
+            'tasks' => UserToolVm::where('status','!=','terminated')->orderBy('updated_at','DESC')->paginate(20)
+        ]);
+
+	
+    }
+	
+	
+	
 	public function update_cloud_task($task_id)
 	{
 		$user_vm=UserCloudVm::find($task_id);
@@ -28,10 +42,20 @@ class CloudController extends Controller
 		$user_vm->progress=100;
 		$user_vm->save();
 		//TODO another type of cloud
-		ActionStop::dispatch($user_vm)->onQueue('yandex');
+		ActionStop::dispatch($user_vm)->onQueue('google');
 		return redirect()->back();
 	}
 	
+		public function update_tool_task($task_id)
+	{
+		$toolVm=UserToolVm::find($task_id);
+		$toolVm->status="tostop";
+		$toolVm->progress=100;
+		$toolVm->save();
+		//TODO another type of cloud
+		ToolStop::dispatch($toolVm)->onQueue('google');
+		return redirect()->back();
+	}
 	
 	public function get($id=null)
     {
@@ -47,18 +71,11 @@ class CloudController extends Controller
 	{
 		$validated = $request->validate([
 			'name' => 'required',
-			'folder_id' => 'required',
-			'subnet_id' => 'required',
-			'platform_id' => 'required',
-			'zone_id' => 'required',
-			'vms_count' => 'required',
-			'service_account_id' => 'required',
-			'key_id' => 'required',
+			'project' => 'required'
 		]);
 		
 		
-		
-			$cloud=Cloud::findOrFail($request->input('id'));
+		$cloud=Cloud::findOrFail($request->input('id'));
 			if ($cloud !== null) {
 				return $this->modify($request,$cloud);
 			}
@@ -71,13 +88,7 @@ class CloudController extends Controller
 	{
 		$validated = $request->validate([
 			'name' => 'required',
-			'folder_id' => 'required',
-			'subnet_id' => 'required',
-			'platform_id' => 'required',
-			'zone_id' => 'required',
-			'vms_count' => 'required',
-			'service_account_id' => 'required',
-			'key_id' => 'required',
+			'project' => 'required'
 		]);
 
 		$cloud=new Cloud;
@@ -87,17 +98,17 @@ class CloudController extends Controller
 	
 	private function modify(Request $request, $cloud)
 	{
-		
+		if($request->hasFile('keyfile'))
+		{
+			$path = $request->file('keyfile')->storeAs('keys', $cloud->id.".json");
+			$cloud->path=$path;
+		}
 		
 		$cloud->name=$request->input('name');
+		$cloud->project=$request->input('project');
+		
 		$cloud->save();
-				$cloud->set_config('service_account_id',$request->input('service_account_id'));
-		$cloud->set_config('key_id',$request->input('key_id'));
-		$cloud->set_config('folder_id',$request->input('folder_id'));
-		$cloud->set_config('subnet_id',$request->input('subnet_id'));
-		$cloud->set_config('platform_id',$request->input('platform_id'));
-		$cloud->set_config('zone_id',$request->input('zone_id'));
-		$cloud->set_config('vms_count',$request->input('vms_count'));
+		
 
 			return redirect()->route('cloud');
 	}

@@ -4,8 +4,6 @@
     
       <nav class="breadcrumb" aria-label="breadcrumbs">
          <ul>
-            <li><a href="{{route('courses')}}">Courses</a></li>
-            <li><a href="{{route('topics',['id' => $course->id])}}">{{$course->name}}</a></li>
             <li class="is-active"><a href="#" >{{$topic->name}}</a></li>
          </ul>
       </nav>
@@ -15,7 +13,7 @@
    <div class="container">
       @if($nodes!=FALSE)
       @foreach ($nodes as $node)
-      <a href="{{route('view-lesson',['course_id' => $course->id,'topic_id' => $topic->id,'node_id'=>$node->node_id])}}">
+      <a href="{{route('view-lesson',['topic_id' => $topic->id,'node_id'=>$node->node_id])}}">
          @if($node->status=='success')
          <article class="media box has-background-success-light">
          @elseif($node->status=='fail')

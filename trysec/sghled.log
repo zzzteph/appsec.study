@@ -1,2 +1,0 @@
-[2021-12-11T19:24:02+00:00] Running scheduled command: '/usr/local/bin/php' 'artisan' uservm:stop > '/dev/null' 2>&1
-[2021-12-11T19:24:02+00:00] Running scheduled command: '/usr/local/bin/php' 'artisan' nodes:timeout > '/dev/null' 2>&1

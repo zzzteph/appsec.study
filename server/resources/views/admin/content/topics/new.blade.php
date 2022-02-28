@@ -1,20 +1,20 @@
 @include('include.header')
 
-
+  <script>
+    tinymce.init({
+      selector: '#description'
+    });
+  </script>
 	 <section class="section">
 	 <div class="container">
      <nav class="breadcrumb" aria-label="breadcrumbs">
-		  <ul>
-		  <li><a href="{{route('courses')}}">Courses</a></li>
-			<li class="is-active"><a href="#">{{$course->name}}</a></li>
 
-		  </ul>
 	</nav>
 
 
 
 
-<form method="POST" action="{{route('admin-add-new-topic',['course_id' => $course->id])}}">
+<form method="POST" action="{{route('admin-add-new-topic')}}">
   @csrf
 
 	
@@ -33,7 +33,7 @@
   <label class="label">Description</label>
   <div class="control">
  
-<textarea class="textarea" placeholder="Textarea" name="description"></textarea>
+<textarea class="textarea" placeholder="Textarea" id="description" name="description"></textarea>
 	
   </div>
 </div>

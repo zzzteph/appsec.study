@@ -17,7 +17,7 @@ class VmsController extends Controller
 	public function get()
     {
       return view('vms.index', [
-            'vms' => Vm::where('type','!=','user')->orderBy('id')->paginate(15)
+            'vms' => Vm::orderBy('id')->paginate(15)
         ]);
     }
 	
@@ -26,8 +26,7 @@ class VmsController extends Controller
 	{
 		$validated = $request->validate([
 			'name' => 'required',
-			'cloud_id' => 'required',
-			'type' => 'required'
+			'image' => 'required',
 		]);
 		
 		$cloud=Cloud::first();
@@ -35,13 +34,9 @@ class VmsController extends Controller
 		return back()->withErrors(['Cloud not set!']);
 		$vm=new Vm;
 		$vm->name=$request->input('name');
-		$vm->type=$request->input('type');
+		$vm->image=$request->input('image');
+		$vm->cloud_id=$cloud->id;
 		$vm->save();
-		$cloudVM=new CloudVm;
-		$cloudVM->template_id=$request->input('cloud_id');
-		$cloudVM->cloud_id=$cloud->id;
-		$vm->cloud()->save($cloudVM);
-
 		return back();
 	}
 	
@@ -51,8 +46,7 @@ class VmsController extends Controller
 		$validated = $request->validate([
 		
 			'name' => 'required',
-			'cloud_id' => 'required',
-			'type' => 'required'
+			'image' => 'required',
 		]);
 		
 		$cloud=Cloud::first();
@@ -60,10 +54,9 @@ class VmsController extends Controller
 			return back()->withErrors(['Cloud not set!']);
 		$vm=Vm::findOrFail($id);
 		$vm->name=$request->input('name');
-		$vm->type=$request->input('type');
+		$vm->image=$request->input('image');
+		$vm->cloud_id=$cloud->id;
 		$vm->save();
-		$vm->cloud->template_id=$request->input('cloud_id');
-		$vm->cloud->save();
 		return back();
 	}
 	

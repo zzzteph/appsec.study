@@ -140,7 +140,7 @@ class Topic extends Model
     protected static function booted()
     {
         static::created(function ($entry) {
-            $entry->order = Topic::where('course_id',$entry->course_id)->max('order')+1;
+            $entry->order = Topic::max('order')+1;
 			$entry->save();
         });
     }

@@ -1,9 +1,5 @@
 @include('include.header')
 
-
-
-
-
 	 <section class="section">
 		 <div class="container">
 
@@ -34,19 +30,12 @@
 	
 	
 
-<div class="field">
-  <label class="label">Name</label>
-  <div class="control">
-		<input class="input" type="text" placeholder="Lab name" name="lab_name" value="{{$lesson->lab->name}}">
-  </div>
-</div>
-
 
 <div class="field">
   <label class="label">Content</label>
   <div class="control">
  
-<textarea class="textarea" placeholder="Textarea" name="content">{{$lesson->lab->content}}</textarea>
+<textarea class="textarea" placeholder="Textarea" id="content" name="content">{{$lesson->lab->content}}</textarea>
 	
   </div>
 </div>

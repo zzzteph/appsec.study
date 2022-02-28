@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Course;
 use App\Models\Topic;
 use App\Models\Lesson;
 use App\Models\TheoryLesson;
@@ -17,10 +16,10 @@ class TheoryLessonController extends Controller
 {
 
 
-	public function mark_as_done($course_id,$topic_id,$lesson_id)
+	public function mark_as_done($topic_id,$lesson_id)
     {
 		//check if userLesson exist
-		$course=Course::where('published', true)->findOrFail($course_id);
+
 		$topic=Topic::findOrFail($topic_id);
 		$node=$topic->current_user_node();
 		if($node->status!='todo' &&  $node->status!=FALSE)
@@ -42,13 +41,13 @@ class TheoryLessonController extends Controller
 		}
 		$userTopicNode->status='success';
 		$userTopicNode->save();
-		return redirect()->route('view-lesson', ['course_id' => $course_id,'topic_id' => $topic_id,'node_id' => $node->node_id]);
+		return redirect()->route('view-lesson', ['topic_id' => $topic_id,'node_id' => $node->node_id]);
     }
 
-	public function mark_as_canceled($course_id,$topic_id,$lesson_id)
+	public function mark_as_canceled($topic_id,$lesson_id)
     {
 		//check if userLesson exist
-		$course=Course::where('published', true)->findOrFail($course_id);
+
 		$topic=Topic::findOrFail($topic_id);
 		$node=$topic->current_user_node();
 		if($node->status!='todo' &&  $node->status!=FALSE)
@@ -73,7 +72,7 @@ class TheoryLessonController extends Controller
 			$userTopicNode->status='fail';
 		
 		$userTopicNode->save();
-		return redirect()->route('view-lesson', ['course_id' => $course_id,'topic_id' => $topic_id,'node_id' => $node->node_id]);
+		return redirect()->route('view-lesson', ['topic_id' => $topic_id,'node_id' => $node->node_id]);
     }
 
 

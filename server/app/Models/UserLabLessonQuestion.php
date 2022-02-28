@@ -20,12 +20,12 @@ class UserLabLessonQuestion extends Model
         static::created(function ($entry) {
 			
 			$user_topic_node=UserTopicNode::where('id',$entry->user_topic_node_id)->first();
-				event(new UserStatisticsChange(User::find($user_topic_node->user_id)));
+			event(new UserStatisticsChange(User::find($user_topic_node->user_id)));
         });
 		
 		static::updated(function ($entry) {
 			$user_topic_node=UserTopicNode::where('id',$entry->user_topic_node_id)->first();
-						event(new UserStatisticsChange(User::find($user_topic_node->user_id)));
+			event(new UserStatisticsChange(User::find($user_topic_node->user_id)));
         });
 		
 		

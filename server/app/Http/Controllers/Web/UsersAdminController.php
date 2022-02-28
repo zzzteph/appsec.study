@@ -36,60 +36,12 @@ class UsersAdminController extends Controller
 		$user->name=$request->input('name');
 		$user->email=$request->input('email');
 		$user->role=$request->input('role');
-		if ($request->filled('password')) {
-
-			$user->password=Hash::make($request->input('password'));
-		}
-		if($request->input('confirmed')=="on" && !$user->hasVerifiedEmail())
-		{
-			$user->markEmailAsVerified();
-		}
 		
 		$user->save();
 		return back();
 	}
 	
 
-	public function create(Request $request)
-	{
-		$validated = $request->validate([
-		
-			'name' => 'required',
-			'email' => 'required'
-		]);
-		if(User::where('name',  $request->input('name'))->where('email',  $request->input('email'))->exists())
-			{
-				return back()->withErrors(['Email is registered or name is already taken']);
-			}
-		$user = new User();
-		$user->name = $request->input('name');
-		$user->password = Hash::make(Str::random(40));
-		$user->email = $request->input('email');
-		$user->save();
-		event(new Registered($user));		
-		
-		
-	
-		return back();
-	}
-	
-
-
-
-
-		public function reset(Request $request,$id)
-	{
-		
-		
-		$user=User::findOrFail($id);
-
-		  $status = Password::sendResetLink(array('email'=>$user->email));
-
-    return $status === Password::RESET_LINK_SENT
-                ? back()
-                : back()->withErrors([$status]);
-
-	}
 		public function delete(Request $request,$id)
 	{
 		
