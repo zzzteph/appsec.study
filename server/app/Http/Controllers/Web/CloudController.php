@@ -41,6 +41,7 @@ class CloudController extends Controller
 		$user_vm->status="tostop";
 		$user_vm->progress=100;
 		$user_vm->save();
+		$user_vm->touch();
 		//TODO another type of cloud
 		ActionStop::dispatch($user_vm)->onQueue('google');
 		return redirect()->back();
@@ -52,6 +53,7 @@ class CloudController extends Controller
 		$toolVm->status="tostop";
 		$toolVm->progress=100;
 		$toolVm->save();
+		$toolVm->touch();
 		//TODO another type of cloud
 		ToolStop::dispatch($toolVm)->onQueue('google');
 		return redirect()->back();

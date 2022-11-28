@@ -17,7 +17,7 @@ use App\Models\Cloud;
 class ToolStop implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
+public $timeout = 240;
     /**
      * Create a new job instance.
      *

@@ -39,6 +39,27 @@
 
 
 
+<div class="field">
+	<label class="label">Type</label>
+  <div class="control">
+
+<div class="select">
+  <select name="type">
+    <option value="attack">attack</option>
+     <option value="defense">defense</option>
+  </select>
+</div>
+
+
+
+  </div>
+</div>
+
+
+<div class="field">
+	<label class="label">Virtual machine</label>
+  <div class="control">
+
 <div class="select">
   <select name="vm">
   @foreach ($vms as $vm)
@@ -47,6 +68,10 @@
 	@endforeach
   </select>
 </div>
+  </div>
+</div>
+
+
 
 
 

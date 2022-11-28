@@ -14,7 +14,7 @@
    <div class="container">
       <div class="content">
 	   @if($node->status=='success'  )
-         <h1 class="title has-text-success">{{$lesson->lab->name}}</h1>
+         <h1 class="title has-text-success">{{$lesson->lab->name}} (done)</h1>
 
             @elseif($node->status=='fail')
 			  <h1 class="title has-text-danger">{{$lesson->lab->name}}</h1>
@@ -51,11 +51,27 @@
             <progress class="progress is-small is-danger" v-if="vm.status=='stopping'" :value="vm.progress" max="100">@{{vm.progress}}%</progress>	  
          </div>
          @elseif(!is_null($task) && ($task->topic_node_id==$node->id) &&  ($task->status=='running'))
+         
+         
+         @if($lesson->lab->type=='attack')
          <div class="block" id="app">
             <div class="content">
                <p><a href="http://{{$task->ip}}" class="button is-success is-fullwidth" target="_blank"> Open Lab</a></p>
             </div>
          </div>
+          @elseif($lesson->lab->type=='defense')
+         <div class="block" id="app">
+            <div class="content">
+               <p><a href="http://{{$task->ip}}" class="button is-success is-fullwidth" target="_blank"> Open Lab</a></p>
+               <p><a href="http://{{$task->ip}}:8081/" class="button is-warning is-fullwidth" target="_blank"> Edit code</a></p>
+            </div>
+         </div>
+		@endif
+
+
+
+         
+         
          <div class="block">
             <form method="POST" action="{{route('stop-task',['node_id' => $node->id])}}">
                @method('DELETE')
@@ -194,15 +210,21 @@
 		 <p>{!! $hint->hint !!}</p>
 		 @endif
 		@endforeach	 
-		 
+		 <div class="columns is-gapless">
 		@foreach ($question->hints as $hint)
 		 
 		 @if($hint->bought!=TRUE)
+			 <div class="column is-one-fifth">
 		  <form method="POST" action="{{route('question-hint',['topic_id' => $topic->id,'node_id' => $node->node_id,'question_id'=>$question->id,'hint_id'=>$hint->id])}}">
             @csrf
 
-		
+			 @if($hint->price<=100)
 		 <button class="button is-success">
+	 @elseif($hint->price>100 && $hint->price<=200)
+	 <button class="button is-warning">
+	 @else
+	 <button class="button is-danger">
+ @endif
 		          <span class="icon-text is-align-items-center">
  
                   <span> {{$hint->price/100}}</span>
@@ -212,12 +234,14 @@
                   </span>
 				  
                   </span>
-		 
-
 		 </button>
+
 			</form>
+			</div>
 		  @endif
+		 
 		@endforeach	 
+		 </div>
 		  @endif
 		 
 		 

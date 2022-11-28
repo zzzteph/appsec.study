@@ -18,7 +18,7 @@ use App\Models\Iamtoken;
 class ActionStop implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
+	public $timeout = 240;
     /**
      * Create a new job instance.
      *
@@ -39,7 +39,6 @@ class ActionStop implements ShouldQueue
     {
 
 		$cloud=Cloud::first();	
-		var_dump($this->uservm->instance_id);		
 		$info=new DeleteInstance($this->uservm->instance_id,$cloud->project,Storage::path($cloud->path));
 		$info->execute();
 		

@@ -33,6 +33,7 @@ class LabLessonController extends Controller
 		$validated = $request->validate([
 			'name' => 'required',
 			'content' => 'required',
+			'type' => 'required',
 			'vm' => 'required'
 		]);
 
@@ -58,6 +59,8 @@ class LabLessonController extends Controller
 		$lesson->lab->name=$request->input('name');
 		$lesson->lab->content=$request->input('content');
 		$lesson->lab->vm_id=$vm->id;
+		
+		$lesson->lab->type=$request->input('type');
 		$lesson->save();
 		$lesson->lab->save();
 		return redirect()->route('admin-edit-lab-lesson',['id' =>$lesson->id]);	 
@@ -70,6 +73,7 @@ class LabLessonController extends Controller
 		$validated = $request->validate([
 			'name' => 'required',
 			'content' => 'required',
+			'type' => 'required',
 			'vm' => 'required'
 		]);
 
@@ -97,7 +101,7 @@ class LabLessonController extends Controller
 		$labLesson->name=$request->input('name');
 		$labLesson->content=$request->input('content');
 		$labLesson->vm_id=$vm->id;
-
+		$labLesson->type=$request->input('type');
 		$lesson->lab()->save($labLesson);
 		
 	

@@ -16,7 +16,7 @@ use Google\Cloud\Compute\V1\Operation;
 use Google\Cloud\Compute\V1\ZoneOperationsClient;
 use Google\Cloud\Compute\V1\AccessConfig;
 use Google\Cloud\Compute\V1\Scheduling;
-
+use Google\ApiCore\ApiException;
 
 class GetInstance 
 {
@@ -64,7 +64,7 @@ class GetInstance
 				}
 			}
 		}
-		catch(Google\ApiCore\ApiException $e)
+		catch(ApiException $exception)
 		{
 			return $this->execute($retry-1);
 		}

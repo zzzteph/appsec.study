@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['prefix' => 'v1'], function () {
-        Route::get('/task/{id}','App\Http\Controllers\Api\TaskController@get' );
+    Route::get('/task/{id}','App\Http\Controllers\Api\TaskController@get' );
 	Route::get('/tool','App\Http\Controllers\Api\TaskController@tool' );
+	Route::get('/notifications','App\Http\Controllers\Api\TaskController@tool' );
 });
 
 

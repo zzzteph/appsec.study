@@ -42,6 +42,31 @@
 
 
 
+
+
+<div class="field">
+	<label class="label">Type</label>
+  <div class="control">
+
+<div class="select">
+  <select name="type">
+	  @if($lesson->lab->type=='attack')
+    <option value="attack" selected>attack</option>
+     <option value="defense">defense</option>
+    @else
+    <option value="attack" >attack</option>
+     <option value="defense" selected>defense</option>
+     @endif
+  </select>
+</div>
+
+
+
+
+<div class="field">
+	<label class="label">Virtual machine</label>
+  <div class="control">
+
 <div class="select">
   <select name="vm">
   @foreach ($vms as $vm)
@@ -53,7 +78,8 @@
 	@endforeach
   </select>
 </div>
-
+  </div>
+</div>
 
 
 

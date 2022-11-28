@@ -16,7 +16,7 @@ use Google\Cloud\Compute\V1\Operation;
 use Google\Cloud\Compute\V1\ZoneOperationsClient;
 use Google\Cloud\Compute\V1\AccessConfig;
 use Google\Cloud\Compute\V1\Scheduling;
-
+use Google\ApiCore\ApiException;
 
 class DeleteInstance 
 {
@@ -33,6 +33,7 @@ class DeleteInstance
 
 	public function execute($retry=3)
 	{
+
 		sleep(1);
 		if($retry<0)return TRUE;
 		if($retry<3)sleep(3-$retry);
@@ -42,7 +43,7 @@ class DeleteInstance
 			$instancesClient = new InstancesClient();
 			$instancesClient->delete($this->name, $this->projectId, $this->zone);
 		}
-		catch(Google\ApiCore\ApiException $e)
+		catch(ApiException $e)
 		{
 			return $this->execute($retry-1);
 		}
