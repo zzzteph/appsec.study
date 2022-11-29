@@ -21,12 +21,7 @@ class AuthController extends Controller
 			if(is_null($user)){	
 				$user = new User;
 				$emailPart = explode("@", $socialUser->getEmail());
-				/*if($emailPart[1]!=="backbase.com")
-				{
-					return redirect('/');
-				}
-				*/
-				
+
 				$user->name = $emailPart[0].Str::random(5);
 				$user->email = $socialUser->getEmail();
 				$user->password=Hash::make(Str::random(40));
