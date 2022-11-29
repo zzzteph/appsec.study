@@ -43,6 +43,30 @@ class Topic extends Model
 
 	public function user_route()
 	{
+		
+		if($this->structure=='graph')return $this->graph_route();
+		if($this->structure=='linear')return $this->linear_route();
+
+	}
+	
+	
+	function linear_route()
+	{
+		$userNodes=collect();
+		foreach($this->topic_nodes as $node)
+		{
+			$userNodes->push($node);
+		}
+		return $userNodes;
+
+
+		
+	}
+	
+	
+	
+	function graph_route()
+	{
 		$userNodes=collect();
 		$currentNode=FALSE;
 		foreach($this->topic_nodes as $node)
@@ -52,19 +76,15 @@ class Topic extends Model
 				$currentNode=$node;
 			}
 		}
-	if(	$currentNode==FALSE) return FALSE;
+		if(	$currentNode==FALSE) return FALSE;
 
 	while(true)
 	{
 		$userNodes->push($currentNode);
 		if($currentNode->status=='todo' || $currentNode->status==FALSE)
 		{
-
 			return $userNodes;
 		}
-		//check if user on last node
-
-		
 		if($currentNode->status=="fail")
 		{
 			if($currentNode->getRoute('fail')==FALSE)
@@ -95,8 +115,10 @@ class Topic extends Model
 	}
 
 	return $userNodes;
-
 	}
+	
+	
+	
 
 	public function getIsDoneAttribute()
 	{

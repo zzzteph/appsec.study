@@ -17,17 +17,81 @@ class NodesController extends Controller
 	public function get($topic_id)
     {
 
-		return view('admin.content.topics.nodes',['lessons'=>Lesson::all(),'topic' =>Topic::findOrFail($topic_id),'nodes'=>TopicNode::where('topic_id', $topic_id)->get()]);
+		$topic=Topic::findOrFail($topic_id);
+
+		if($topic->structure=='linear')
+			return view('admin.content.topics.structure.linear',['lessons'=>Lesson::all(),'topic' =>Topic::findOrFail($topic_id),'nodes'=>TopicNode::where('topic_id', $topic_id)->get()]);
+
+		if($topic->structure=='graph')
+			return view('admin.content.topics.structure.graph',['lessons'=>Lesson::all(),'topic' =>Topic::findOrFail($topic_id),'nodes'=>TopicNode::where('topic_id', $topic_id)->get()]);
     }
 	
 	public function update(Request $request,$topic_id)
     {
 		
 		$topic=Topic::findOrFail($topic_id);
-		if (!$request->filled('nodes') || !$request->filled('routes')) 
-		 return back()->withErrors([
-            'message' => 'You must set nodes and routes!',
-        ]);
+		
+
+		if($topic->structure=='linear' || $topic->structure=='hidden')
+		{
+			$request->validate([
+				'lessons' => 'required'
+			]);
+			return $this->update_linear($request,$topic);
+		}
+		
+		
+		
+		
+		if($topic->structure=='graph')
+		{
+			$request->validate([
+				'nodes' => 'required',
+				'routes' => 'required'
+			]);
+			return $this->update_graph($request,$topic);
+		}
+		return back();
+    }
+	
+	
+	function update_linear($request,$topic)
+	{
+		
+		TopicNode::where('topic_id',$topic->id)->delete();
+		$nodes=array();
+		foreach($request->input('lessons') as $entry)
+		{
+			$lesson=Lesson::where('id',$entry)->first();
+			if($lesson==null)continue;
+			$topicNode=new TopicNode;
+			$topicNode->topic_id=$topic->id;
+			$topicNode->lesson_id=$lesson->id;
+			$topicNode->node_id=0;
+			$topicNode->save();
+			array_push($nodes,$topicNode->id);
+		}
+		
+			for($i=0;$i<count($nodes)-1;$i++)
+			{
+				$topicRoute=new TopicNodeRoute;
+				$topicRoute->from_id=$nodes[$i];
+				$topicRoute->to_id=$nodes[$i+1];
+				$topicRoute->condition='none';
+				$topicRoute->save();
+			}
+
+		
+		
+	return redirect()->route('admin-nodes', ['topic_id' => $topic->id]);
+		
+		
+		
+	}
+	
+	
+	function update_graph($request,$topic)
+	{
 		
 		
 		//todo JSON
@@ -152,13 +216,8 @@ class NodesController extends Controller
 			$topicRoute->condition=$route->condition;
 			$topicRoute->save();
 		}
-	
-	return redirect()->route('admin-nodes', ['topic_id' => $topic_id]);
-	
-	
-	
-    }
-	
+		return redirect()->route('admin-nodes', ['topic_id' => $topic->id]);
+	}
 	
 	
 

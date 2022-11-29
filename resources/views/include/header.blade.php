@@ -47,99 +47,7 @@
         Scoreboard
       </a>
 
-@auth
 
-
-	@if(Auth::user()->has_tool)
-
-		@if(is_null(Auth::user()->tool_vm()))
-        <a class="navbar-item">
-			<form method="POST"  action="{{route('user-tool-start')}}">
-				@csrf
-				<button class="button is-primary">
-				<span class="icon-text">
-					<span>Remote Desktop</span>
-					  <span class="icon">
-						<i class="fas fa-play"></i>
-					  </span>
-					</span>
-				</button>
-			</form>
-		</a>
-		@else
-
-			@if(Auth::user()->tool_vm()->status=="running")
-			<div id="uservm" class="navbar-item">
-				<div class="field is-grouped">
-					<p class="control">
-			<a
-v-bind:class = "(uservm.timeout > 45)?'button is-success':(uservm.timeout<=45 && uservm.timeout>30)?'button is-info':(uservm.timeout<=30 && uservm.timeout>15)?'button is-warning':'button is-danger'"
-
-target="_blank" href="http://{{Auth::user()->tool_vm()->ip}}:6080/?autoconnect=true&password=123456">
-				<span class="icon-text">
-				<span>Remote Desktop</span>
-				  <span class="icon">
-					<i class="fas fa-sign-in-alt"></i>
-				  </span>
-	         <span>@{{ uservm.timeout }}</span>
-          <span class="icon">
-					<i v-bind:class = "(uservm.timeout > 45)?'fas fa-hourglass-start':(uservm.timeout<=45 && uservm.timeout>30)?'fas fa-hourglass-half':(uservm.timeout<=30 && uservm.timeout>15)?'fas fa-hourglass-end':'fas fa-hourglass'"></i>
-				 </span>
-
-
-
-				</span>
-
-			</a>
-			</p>
-
-
-			<p class="control">
-			<form method="POST"  action="{{route('user-tool-stop')}}">
-			@method('DELETE')
-			@csrf
-            <button class="button is-danger">
-
-			<span class="icon-text">
-				  <span class="icon">
-					<i class="fas fa-stop"></i>
-				  </span>
-				</span>
-			</button>
-
-			</form>
-			</p>
-
-				</div>
-			</div>
-			@else
-			<a id="uservm" class="navbar-item">
-
-			<button v-if="uservm.status =='todo' || uservm.status =='starting'" class="button is-primary">
-			<span class="icon-text">
-				  <span class="icon" >
-					<i class="fas fa-hourglass-start fa-spin" v-if="100-uservm.progress> 70"></i>
-					<i class="fas fa-hourglass-half fa-spin" v-else-if="100-uservm.progress<=70 && 100-uservm.progress>30"></i>
-					<i class="fas fa-solid fa-hourglass-empty fa-spin" v-else></i>
-				  </span>
-				  <span>@{{ 100-uservm.progress }} left</span>
-			</span>
-
-			</button>
-			<button v-if="uservm.status =='tostop' || uservm.status =='stopping'" class="button is-danger">
-			<span class="icon-text">
-				  <span class="icon">
-					<i class="fas fa-spinner fa-spin"></i>
-				  </span>
-				</span>
-			</button>
-			</a>
-			@endif
-		@endif
-	@endif
-
-
-@endauth
 
 
 
@@ -154,26 +62,16 @@ target="_blank" href="http://{{Auth::user()->tool_vm()->ip}}:6080/?autoconnect=t
 
 
         <div class="navbar-dropdown">
-          <a class="navbar-item" href="{{route('cloud')}}">
-            Cloud
-          </a>
+
           <a class="navbar-item" href="{{route('vms')}}">
             VMS
           </a>
           <a class="navbar-item" href="{{route('admin-users')}}">
             Users
           </a>
-		  <a class="navbar-item" href="{{route('admin-tools')}}">
-            Tools
-          </a>
-
-
           <hr class="navbar-divider">
           <a class="navbar-item" href="{{route('monitor-task')}}">
             Jobs monitoring
-          </a>
-		            <a class="navbar-item" href="{{route('monitor-tool')}}">
-            Tools monitoring
           </a>
         </div>
       </div>

@@ -44,7 +44,7 @@
 			<a class="button is-small is-warning" href={{route('admin-edit-topic',['topic_id' => $topic->id])}}>Edit</a>
 
         <br>
-        {{$topic->description}}
+        {!!$topic->description!!}
       </p>
     </div>
 	

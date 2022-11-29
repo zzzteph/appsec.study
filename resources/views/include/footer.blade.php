@@ -102,85 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-	@if(!is_null(Auth::user()->tool_vm()) && Auth::user()->tool_vm()->status!='terminated' && Auth::user()->tool_vm()->status!='running')
-		<script>
+	
 
-	new Vue({
-		el: "#uservm",
-		data: {
-			uservm: null,
-			interval: null,
-
-		},
-		methods: {
-
-			getVM: function(event) {
-				axios.get('/api/v1/tool').then((response) => {
-					this.uservm = response.data;
-					if (this.uservm.status == 'terminated' || this.uservm.status == 'running') {
-						document.location.reload(true);
-					}
-				}).catch(error => {
-					
-					document.location.reload(true);
-					
-				});;
-
-			},
-
-		},
-		mounted: function() {
-			this.getVM();
-			var self = this;
-			this.interval = setInterval(function() {
-				self.getVM();
-			}, 5000);
-		}
-
-	});
-	</script>
-
-	@endif
-
-	@if(!is_null(Auth::user()->tool_vm()) && Auth::user()->tool_vm()->status=='running')
-		<script>
-
-	new Vue({
-		el: "#uservm",
-		data: {
-			uservm: null,
-			interval: null,
-
-		},
-		methods: {
-
-			getVM: function(event) {
-				axios.get('/api/v1/tool').then((response) => {
-					this.uservm = response.data;
-					if (this.uservm.status != 'running') {
-						document.location.reload(true);
-					}
-				}).catch(error => {
-					
-					document.location.reload(true);
-					
-				});;
-
-			},
-
-		},
-		mounted: function() {
-			this.getVM();
-			var self = this;
-			this.interval = setInterval(function() {
-				self.getVM();
-			}, 5000);
-		}
-
-	});
-	</script>
-
-	@endif
 	
 
 

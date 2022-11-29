@@ -1,12 +1,6 @@
 @include('include.header')
 
-  <script>
-    tinymce.init({
-      selector: '#description',
-	    plugins: 'code',
 
-    });
-  </script>
 	 <section class="section">
 		 <div class="container">
      <nav class="breadcrumb" aria-label="breadcrumbs">
@@ -45,7 +39,19 @@
 	
   </div>
 </div>
-
+<div class="field">
+<div class="select">
+  <select name="structure">
+  @if($topic->structure=='linear')
+		<option value='linear' selected>linear</option>
+		<option value='graph'>graph</option>
+	@else
+	    <option value='linear' >linear</option>
+		<option value='graph' selected>graph</option>
+	@endif
+  </select>
+</div>
+</div>
 <div class="field">
   <div class="control">
     <label class="checkbox">

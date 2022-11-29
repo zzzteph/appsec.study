@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Web;
+namespace App\Http\Controllers\Web\Admin;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Models\Course;
 use App\Models\Cloud;
 use App\Models\UserCloudVm;
-use App\Models\UserToolVm;
 use App\Jobs\Google\ActionStop;
 use App\Jobs\Google\ToolStart;
 use App\Jobs\Google\ToolStop;

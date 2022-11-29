@@ -35,42 +35,48 @@ class TopicsController extends Controller
 	public function update(Request $request,$topic_id)
 	{
 	
+				$validated = $request->validate([
+			'name' => 'required|max:64|min:4',
+			'description' => 'required'
+		]);
+	
+	
 		$topic=Topic::findOrFail($topic_id);
-		if (!$request->filled('name')) 
-		 return back()->withErrors([
-            'message' => 'You must set at least the name',
-        ]);
+		
+			$topic->name=$request->input('name');
 
-				return $this->modify($request,$topic);
+			$topic->description=$request->input('description');
+		if($request->filled('published'))
+			$topic->published=TRUE;
+		else
+			$topic->published=FALSE;
+		$topic->save();
+		return redirect()->route('admin-list-topics');
+	
 
 	}
 	
 	
 	public function create(Request $request)
 	{
-		if (!$request->filled('name')) 
-		 return back()->withErrors([
-            'message' => 'You must set at least the name',
-        ]);
+		$request->validate([
+			'name' => 'required|max:64|min:4',
+			'structure' => 'required',
+			'description' => 'required'
+		]);
+
 		$topic=new Topic;
-		return $this->modify($request,$topic);
-	}
-	
-	private function modify(Request $request, $topic)
-	{
-		
-		if($request->filled('name'))
-			$topic->name=$request->input('name');
-		if($request->filled('description'))
-			$topic->description=$request->input('description');
+		$topic->name=$request->input('name');
+		$topic->description=$request->input('description');
 		if($request->filled('published'))
 			$topic->published=TRUE;
 		else
-		$topic->published=FALSE;
+			$topic->published=FALSE;
+		$topic->structure=$request->input('structure');
 		$topic->save();
 		return redirect()->route('admin-list-topics');
-
 	}
+	
 
 
 	public function delete(Request $request,$topic_id)
