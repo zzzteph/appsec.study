@@ -35,7 +35,7 @@
          @else
          <div class="column is-full">
             @endif
-            <form method="POST" action="{{route('mark-theory-as-read',['topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">
+            <form method="POST" action="{{route('mark-theory-as-read',['topic_id' => $topic->id,'lesson_id' => $lesson->id,'node_id' => $node->id])}}">
                @method('PUT')
                @csrf
                <div class="field">
@@ -54,7 +54,7 @@
          </div>
          @if($lesson->theory->cancel==TRUE)
          <div class="column is-half">
-            <form method="POST" action="{{route('mark-theory-as-canceled',['topic_id' => $topic->id,'lesson_id' => $lesson->id])}}">
+            <form method="POST" action="{{route('mark-theory-as-canceled',['topic_id' => $topic->id,'lesson_id' => $lesson->id,'node_id' => $node->id])}}">
                @method('PUT')
                @csrf
                <div class="field is-grouped-right">

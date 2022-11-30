@@ -11,6 +11,7 @@ use App\Models\TopicNode;
 use App\Models\TopicNodeCondition;
 use App\Models\TopicNodeRoute;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 class NodesController extends Controller
 {
 	
@@ -28,8 +29,18 @@ class NodesController extends Controller
 	
 	public function update(Request $request,$topic_id)
     {
-		
 		$topic=Topic::findOrFail($topic_id);
+		//prevent updating tournament if it started
+		if($topic->type='tournament')
+		{
+			if(Carbon::now()->diffInDays($topic->start_at)<=0 && $topic->published==true)
+			{
+				return back()->withErrors(['error' => 'Tournament already started']);
+			}
+		}
+		
+		
+		
 		
 
 		if($topic->structure=='linear' || $topic->structure=='hidden')
@@ -186,12 +197,12 @@ class NodesController extends Controller
 		}
 		
 		//todo refactor not to touch 
-		TopicNode::where('topic_id',$topic_id)->delete();
+		TopicNode::where('topic_id',$topic->id)->delete();
 	
 		foreach($nodes as $node)
 		{		
 			$topicNode=new TopicNode;
-			$topicNode->topic_id=$topic_id;
+			$topicNode->topic_id=$topic->id;
 			$topicNode->lesson_id=$node->lesson;
 			$topicNode->node_id=$node->id;
 			$topicNode->save();
@@ -208,8 +219,8 @@ class NodesController extends Controller
 
 		foreach($routes as $route)
 		{
-			$topicNodeFrom=TopicNode::where('topic_id',$topic_id)->where('node_id',$route->from)->first();
-			$topicNodeTo=TopicNode::where('topic_id',$topic_id)->where('node_id',$route->to)->first();
+			$topicNodeFrom=TopicNode::where('topic_id',$topic->id)->where('node_id',$route->from)->first();
+			$topicNodeTo=TopicNode::where('topic_id',$topic->id)->where('node_id',$route->to)->first();
 			$topicRoute=new TopicNodeRoute;
 			$topicRoute->from_id=$topicNodeFrom->id;
 			$topicRoute->to_id=$topicNodeTo->id;

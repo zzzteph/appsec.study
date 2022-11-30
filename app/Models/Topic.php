@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Auth;
+use Carbon\Carbon;
 class Topic extends Model
 {
     use HasFactory;
@@ -167,5 +168,33 @@ class Topic extends Model
         });
     }
 
-	
+	public function getIsTournamentPlannedAttribute()
+	{
+		if($this->type!=='tournament')return FALSE;
+		if(Carbon::now()->diffInDays($this->start_at)>0 && $topic->published==true)
+		{
+				return TRUE;
+		}
+		return FALSE;
+	}
+
+
+	public function getIsTournamentStartedAttribute()
+	{
+		if($this->type!=='tournament')return FALSE;
+		if(Carbon::now()->diffInDays($this->start_at)<=0 && $topic->published==true && Carbon::now()->diffInDays($this->ends_at)>=0)
+		{
+				return TRUE;
+		}
+		return FALSE;
+	}
+		public function getIsTournamentArchivedAttribute()
+	{
+		if($this->type!=='tournament')return FALSE;
+		if(Carbon::now()->diffInDays($this->start_at)<=0 && $topic->published==true && Carbon::now()->diffInDays($this->ends_at)<=0)
+		{
+				return TRUE;
+		}
+		return FALSE;
+	}
 }

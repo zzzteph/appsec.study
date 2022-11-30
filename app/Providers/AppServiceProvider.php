@@ -25,5 +25,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
           Paginator::defaultView('vendor.pagination.default');
+		//  Blade::component('tournament-menu', TournamentMenu::class);
     }
 }

@@ -69,46 +69,7 @@
             </span>
          </div>
       </div>
-	   @if (count($user->nodes))
-      <div class="content">
-         <h3 class="subtitle">Last lessons</h3>
-         <hr/>
-         @foreach ($user->nodes as $node)
-         @if ($node->status == 'todo')
-         @continue
-         @endif
-         @if($node->status=='success')
-         <article class="media box has-background-success-light">
-         @elseif($node->status=='fail')
-         <article class="media box has-background-danger-light">
-            @endif
-            <figure class="media-left">
-               <span class="icon-text is-align-items-center">
-               <span class="icon is-large">
-               @if($node->topic_node->lesson->type=="theory")
-               <i class="fas fa-book-open fa-lg"></i>
-               @else
-               <i class="fas fa-flask fa-lg"></i>
-               @endif
-               </span>
-               </span>
-            </figure>
-            <div class="media-content ">
-               <div class="content">
-                  <p>
-                     <strong class="is-size-4">
-                     {{$node->topic_node->lesson->name}}
-                     </strong>
-                  </p>
-                  <p>
-                     {{$node->updated_at}}
-                  </p>
-               </div>
-            </div>
-         </article>
-         @endforeach
-      </div>
-	  @endif
+
    </div>
 </section>
 @include('include.footer')

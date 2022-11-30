@@ -9,16 +9,17 @@ use App\Http\Controllers\Web\TheoryLessonController;
 use App\Http\Controllers\Web\LabLessonController;
 use App\Http\Controllers\Web\LabLessonQuestionController;
 use App\Http\Controllers\Web\NodesController;
-use App\Http\Controllers\Web\CloudController;
 use App\Http\Controllers\Web\UsersAdminController;
-use App\Http\Controllers\Web\VmsController;
 use App\Http\Controllers\Web\TaskController;
 use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\UserVmsController;
 
 
+
+use App\Http\Controllers\Web\Admin\VmsController;
+use App\Http\Controllers\Web\Admin\CloudController;
+use App\Http\Controllers\Web\Admin\TournamentsController as AdminTournaments;
 use App\Http\Controllers\Web\Admin\TopicsController as AdminTopics;
-use App\Http\Controllers\Web\Admin\ToolsController;
 use App\Http\Controllers\Web\Admin\NodesController as AdminNodes;
 use App\Http\Controllers\Web\Admin\LessonsController as AdminLesson;
 use App\Http\Controllers\Web\Admin\TheoryLessonController as AdminTheory;
@@ -63,25 +64,33 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	Route::delete('topics/{topic_id}', [AdminTopics::class, 'delete'])->name('admin-delete-topic');
 
 
+//tournaments
+
+	Route::get('tournaments', [AdminTournaments::class, 'list'])->name('admin-list-tournaments');
+	Route::get('tournaments/new', [AdminTournaments::class, 'new'])->name('admin-new-tournament');
+	Route::get('tournaments/{id}',[AdminTournaments::class, 'edit'])->name('admin-edit-tournament');
+	Route::post('tournaments', [AdminTournaments::class, 'create'])->name('admin-add-new-tournament');
+	Route::put('tournaments/{id}', [AdminTournaments::class, 'update'])->name('admin-update-tournament');
+	Route::delete('tournaments/{id}', [AdminTournaments::class, 'delete'])->name('admin-delete-tournament');
+
+
+
 
 	//node controller
 	
 	Route::get('topics/{topic_id}/lessons', [AdminNodes::class, 'get'])->name('admin-nodes');
 	Route::put('topics/{topic_id}/lessons', [AdminNodes::class, 'update'])->name('admin-nodes-update');
 
-
-
-	//cloud routes
-	Route::get('/cloud', [CloudController::class, 'get'])->name('cloud');
-	Route::post('/cloud', [CloudController::class, 'create'])->name('create-cloud');
-	Route::put('/cloud', [CloudController::class, 'update'])->name('update-cloud');
-
+	//node tournament 
+	Route::get('tournaments/{topic_id}/lessons', [AdminNodes::class, 'get'])->name('admin-tournaments-nodes');
+	Route::put('tournaments/{topic_id}/lessons', [AdminNodes::class, 'update'])->name('admin-tournaments-nodes-update');
+	
+	
 
 	//admin cloud-tasks monitor
 	Route::get('/cloud/tasks', [CloudController::class, 'monitor'])->name('monitor-task');
 	Route::put('/cloud/tasks/{task_id}', [CloudController::class, 'update_cloud_task'])->name('update-cloud-task');
-	Route::get('/cloud/tools', [CloudController::class, 'monitor_tools'])->name('monitor-tool');
-	Route::put('/cloud/tools/{task_id}', [CloudController::class, 'update_tool_task'])->name('update-tool-task');
+
 
 
 
@@ -90,13 +99,6 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	Route::post('/vms', [VmsController::class, 'create'])->name('create-vms');
 	Route::put('/vms/{id}', [VmsController::class, 'update'])->name('update-vms');
 	Route::delete('/vms/{id}', [VmsController::class, 'delete'])->name('delete-vms');
-
-	//userVMS management
-
-	Route::get('/tools', [ToolsController::class, 'get'])->name('admin-tools');
-	Route::post('/tools', [ToolsController::class, 'create'])->name('create-admin-tools');
-	Route::put('/tools', [ToolsController::class, 'update'])->name('update-admin-tools');
-	Route::delete('/tools', [ToolsController::class, 'delete'])->name('delete-admin-tools');
 
 
 
@@ -163,26 +165,32 @@ Route::middleware(['auth','verified'])->group(function () {
 
 	Route::get('topics',[TopicsController::class, 'list'])->name('topics');
 	Route::get('topics/{topic_id}', [NodesController::class, 'list'])->name('lessons');
-	
 	Route::get('topics/{topic_id}/lessons', [NodesController::class, 'list'])->name('lessons');
-
 	Route::get('topics/{topic_id}/lessons/{node_id}', [NodesController::class, 'view'])->name('view-lesson');
+	//actions
+	Route::put('topics/{topic_id}/lessons/{lesson_id}/{node_id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
+	Route::put('topics/{topic_id}/lessons/{lesson_id}/{node_id}/cancel', [TheoryLessonController::class, 'mark_as_canceled'])->name('mark-theory-as-canceled');
 	
-//actions
-	Route::put('topics/{topic_id}/lessons/{lesson_id}/done', [TheoryLessonController::class, 'mark_as_done'])->name('mark-theory-as-read');
-	Route::put('topics/{topic_id}/lessons/{lesson_id}/cancel', [TheoryLessonController::class, 'mark_as_canceled'])->name('mark-theory-as-canceled');
+	
+	
+	
 	
 	
 	
 	Route::post('topics/{topic_id}/lessons/{node_id}', [LabLessonQuestionController::class, 'answer'])->name('question-answer');
 	Route::post('topics/{topic_id}/lessons/{node_id}/{question_id}/{hint_id}', [LabLessonQuestionController::class, 'hint'])->name('question-hint');
+	
+	//tournaments
+	
+	Route::get('tournaments', [TopicsController::class, 'list'])->name('list-tournaments');
+	Route::get('tournaments/{id}', [TopicsController::class, 'view'])->name('view-tournament');
+	
+	
+	
+	
 	//tasks
 	Route::post('/task/{node_id}', [TaskController::class, 'start'])->name('start-task');
 	Route::delete('/task/{node_id}', [TaskController::class, 'stop'])->name('stop-task');
-	//user vms
-
-	Route::post('/tools', [TaskController::class, 'tools_start'])->name('user-tool-start');
-	Route::delete('/tools', [TaskController::class, 'tools_stop'])->name('user-tool-stop');
 	//user pages
 	Route::get('users/{id}/edit',[UsersController::class, 'edit'])->name('edit-user-page');
 	Route::put('users/{id}',[UsersController::class, 'update'])->name('update-user-page');

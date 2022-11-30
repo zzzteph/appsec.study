@@ -27,7 +27,7 @@ class NodesController extends Controller
 	{	
 	
 		$topic = Topic::where('published', true)->findOrFail($topic_id);
-		$node = TopicNode::where('topic_id', $topic_id)->where('node_id', $node_id)->first();
+		$node = TopicNode::where('topic_id', $topic_id)->where('id', $node_id)->first();
 		$lesson=$node->lesson;
 		$hasAccess=false;
 		foreach($topic->user_route() as $route)

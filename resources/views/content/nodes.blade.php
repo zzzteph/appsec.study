@@ -13,7 +13,7 @@
    <div class="container">
       @if($nodes!=FALSE)
       @foreach ($nodes as $node)
-      <a href="{{route('view-lesson',['topic_id' => $topic->id,'node_id'=>$node->node_id])}}">
+      <a href="{{route('view-lesson',['topic_id' => $topic->id,'node_id'=>$node->id])}}">
          @if($node->status=='success')
          <article class="media box has-background-success-light">
          @elseif($node->status=='fail')

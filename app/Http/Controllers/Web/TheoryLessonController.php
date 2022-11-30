@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Topic;
 use App\Models\Lesson;
 use App\Models\TheoryLesson;
+use App\Models\TopicNode;
 use App\Models\LabLesson;
 use App\Models\LabLessonQuestion;
 use App\Models\UserTopicNode;
@@ -16,15 +17,20 @@ class TheoryLessonController extends Controller
 {
 
 
-	public function mark_as_done($topic_id,$lesson_id)
+	public function mark_as_done($topic_id,$lesson_id,$node_id)
     {
 		//check if userLesson exist
 
 		$topic=Topic::findOrFail($topic_id);
-		$node=$topic->current_user_node();
-		if($node->status!='todo' &&  $node->status!=FALSE)
+		
+		$node=TopicNode::where('id',$node_id)->where('topic_id',$topic->id)->first();
+		if($topic->structure=='graph')
 		{
-			return back()->withErrors([	'message' => 'You can not do anything to this lesson']);
+			$node=$topic->current_user_node();
+			if($node->status!='todo' &&  $node->status!=FALSE)
+			{
+				return back()->withErrors([	'message' => 'You can not do anything to this lesson']);
+			}
 		}
 		if($node->lesson->type!='theory')
 		{
@@ -41,18 +47,22 @@ class TheoryLessonController extends Controller
 		}
 		$userTopicNode->status='success';
 		$userTopicNode->save();
-		return redirect()->route('view-lesson', ['topic_id' => $topic_id,'node_id' => $node->node_id]);
+		return redirect()->route('lessons', ['topic_id' => $topic_id]);
     }
 
-	public function mark_as_canceled($topic_id,$lesson_id)
+	public function mark_as_canceled($topic_id,$lesson_id,$node_id)
     {
 		//check if userLesson exist
 
 		$topic=Topic::findOrFail($topic_id);
-		$node=$topic->current_user_node();
-		if($node->status!='todo' &&  $node->status!=FALSE)
+		$node=TopicNode::where('id',$node_id)->where('topic_id',$topic->id)->first();
+		if($topic->structure=='graph')
 		{
-			return back()->withErrors([	'message' => 'You can not do anything to this lesson']);
+			$node=$topic->current_user_node();
+			if($node->status!='todo' &&  $node->status!=FALSE)
+			{
+				return back()->withErrors([	'message' => 'You can not do anything to this lesson']);
+			}
 		}
 		if($node->lesson->type!='theory')
 		{
@@ -72,7 +82,7 @@ class TheoryLessonController extends Controller
 			$userTopicNode->status='fail';
 		
 		$userTopicNode->save();
-		return redirect()->route('view-lesson', ['topic_id' => $topic_id,'node_id' => $node->node_id]);
+		return redirect()->route('lessons', ['topic_id' => $topic_id]);
     }
 
 

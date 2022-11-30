@@ -10,8 +10,12 @@
 	 <script defer src="{{asset('fontawesome/js/all.js')}}" type="text/javascript"></script>
 	 <script src="{{asset('js/vue.js')}}" type="text/javascript"></script>
 	 <script src="{{asset('js/axios.min.js')}}" type="text/javascript"></script>
-	 <script src="{{asset('js/tinymce.min.js')}}" type="text/javascript"></script>
-	 	    <style type="text/css" media="screen">
+
+	 
+	 
+	 
+	 
+	 <style type="text/css" media="screen">
       body {
         display: flex;
         min-height: 100vh;
@@ -46,9 +50,10 @@
       <a class="navbar-item" href="{{route('users')}}">
         Scoreboard
       </a>
-
-
-
+	  
+@auth
+     <x-tournament-menu/>
+@endauth
 
 
 @auth
@@ -88,18 +93,15 @@
 
 
         <div class="navbar-dropdown">
-
-
 	       <a class="navbar-item" href="{{route('admin-view-lessons')}}">
             Lessons
           </a>
-
-
-
 		 <a class="navbar-item" href="{{route('admin-list-topics')}}">
            Topics
           </a>
-
+		 <a class="navbar-item" href="{{route('admin-list-tournaments')}}">
+           Tournaments
+          </a>
 
 
 

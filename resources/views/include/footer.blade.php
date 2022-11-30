@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
+  
+ 
 </script>
 
 @auth

@@ -18,8 +18,6 @@ use App\Models\UserCloudVm;
 use App\Models\Cloud;
 use App\Models\ToolVm;
 use App\Models\UserToolVm;
-use App\Jobs\Google\ToolStart;
-use App\Jobs\Google\ToolStop;
 
 use App\Jobs\Google\ActionStart;
 use App\Jobs\Google\ActionStop;
@@ -141,65 +139,6 @@ class TaskController extends Controller
 		$userLabVm->progress=100;
 		$userLabVm->save();
 		ActionStop::dispatch($userLabVm)->onQueue('google');
-		return redirect()->back();
-
-	}
-
-
-	public function tools_start(Request $request)
-	{
-		$cloud=Cloud::first();
-		if($cloud===null)
-		{
-			return redirect()->back()->withErrors('Unable to start user vm. Unable to locate cloud');
-		}
-		$tool_vm=ToolVm::first();
-		if($tool_vm==null)
-		{
-			return redirect()->back()->withErrors('Unable to start user vm. No VM');
-		}
-
-		if(!$this->can_start())
-		{
-				return redirect()->back()->withErrors('You worked pretty hard. Please wait until tomorrow');
-		}
-		if(Auth::user()->tool_vm()==null)
-		{
-			$toolVm=new UserToolVm;
-			$toolVm->user_id=Auth::user()->id;
-			$toolVm->template_id=$tool_vm->name;
-			$toolVm->tool_vm_id=$tool_vm->id;
-			$toolVm->progress=0;
-			$toolVm->status="todo";
-			$toolVm->save();
-
-			ToolStart::dispatch($toolVm)->onQueue('google');
-		}
-
-		return redirect()->back();
-
-	}
-
-
-	public function tools_stop(Request $request)
-	{
-
-
-		$user_vm=Auth::user()->tool_vm();
-		if($user_vm==null)
-		{
-				return redirect()->back()->withErrors('VM cant be stopped');
-		}
-
-		if($user_vm->status!='running')
-		{
-			return redirect()->back()->withErrors('Task can not be stopped');
-		}
-
-		$user_vm->status="tostop";
-		$user_vm->progress=100;
-		$user_vm->save();
-		ToolStop::dispatch($user_vm)->onQueue('google');
 		return redirect()->back();
 
 	}
