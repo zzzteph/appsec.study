@@ -36,7 +36,7 @@ class NodesController extends Controller
 		}
 		if(!$hasAccess)
 		{
-			return redirect()->back()->withErrors('You have no access to this lesson');
+			return redirect()->back()->withErrors('You have no access to this task');
 		}
 		$userTopicNode=UserTopicNode::where('user_id',Auth::user()->id)->where('topic_node_id',$node->id)->first();
 		if($userTopicNode==null)

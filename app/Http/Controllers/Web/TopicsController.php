@@ -15,7 +15,7 @@ class TopicsController extends Controller
 
 		if(Auth::user()->admin)
 		{
-			$topics=Topic::orderBy('order', 'asc')->get();
+			$topics=Topic::where('type','course')->orderBy('order', 'asc')->get();
 		}
 		else
 		{

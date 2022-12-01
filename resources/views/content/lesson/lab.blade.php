@@ -148,7 +148,7 @@
 	  </div>
       @elseif(!$question->correct($node->user_topic_node->id) && ($node->status!='success' && $node->status!='fail'))
       <div class="content box">
-         <form method="POST" action="{{route('question-answer',['topic_id' => $topic->id,'node_id' => $node->node_id])}}">
+         <form method="POST" action="{{route('question-answer',['topic_id' => $topic->id,'node_id' => $node->id])}}">
             @csrf
             <input type="hidden" name="question_id" value="{{$question->id}}">
             <div class="field">
@@ -215,7 +215,7 @@
 		 
 		 @if($hint->bought!=TRUE)
 			 <div class="column is-one-fifth">
-		  <form method="POST" action="{{route('question-hint',['topic_id' => $topic->id,'node_id' => $node->node_id,'question_id'=>$question->id,'hint_id'=>$hint->id])}}">
+		  <form method="POST" action="{{route('question-hint',['topic_id' => $topic->id,'node_id' => $node->id,'question_id'=>$question->id,'hint_id'=>$hint->id])}}">
             @csrf
 
 			 @if($hint->price<=100)

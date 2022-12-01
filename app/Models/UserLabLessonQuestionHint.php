@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Events\UserStatisticsChange;
 class UserLabLessonQuestionHint extends Model
 {
     use HasFactory;
@@ -13,6 +13,22 @@ class UserLabLessonQuestionHint extends Model
     {
 		return $this->belongsTo(LabLessonQuestionHint::class);
     }
-	
+	protected static function booted()
+    {
+        static::created(function ($entry) {
+			
+			
+			$user_topic_node=UserTopicNode::where('id',$entry->user_topic_node_id)->first();
+			event(new UserStatisticsChange($user_topic_node));
+        });
+		
+		static::updated(function ($entry) {
+			$user_topic_node=UserTopicNode::where('id',$entry->user_topic_node_id)->first();
+			event(new UserStatisticsChange($user_topic_node));
+        });
+		
+		
+		
+    }
 	
 }

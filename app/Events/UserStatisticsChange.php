@@ -9,7 +9,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-
+use App\Models\UserTopicNode;
 use App\Models\User;
 class UserStatisticsChange
 {
@@ -21,10 +21,10 @@ class UserStatisticsChange
      * @return void
      */
 	 
-	     public $user;
-    public function __construct(User $user)
+	public $node;
+    public function __construct(UserTopicNode $node)
     {
-        $this->user = $user;
+        $this->node = $node;
     }
 
     /**

@@ -23,7 +23,7 @@ class LabLessonQuestionController extends Controller
 	public function hint(Request $request,$topic_id,$node_id,$question_id,$hint_id)
 	{
 		$topic = Topic::where('published', true)->where('id',$topic_id)->firstOrFail();	
-		$node = TopicNode::where('node_id',$node_id)->where('topic_id',$topic_id)->firstOrFail();
+		$node = TopicNode::where('id',$node_id)->where('topic_id',$topic_id)->firstOrFail();
 
 		$hasAccess=false;
 		foreach($topic->user_route() as $route)
@@ -75,6 +75,7 @@ class LabLessonQuestionController extends Controller
 		$userHint=new UserLabLessonQuestionHint;
 		$userHint->user_id=$user->id;
 		$userHint->lab_lesson_question_hint_id=$hint->id;
+		$userHint->user_topic_node_id=$userNode->id;
 		$userHint->save();
 		return redirect()->back()->with('success', 'Hint bought!');   
 
@@ -91,14 +92,13 @@ class LabLessonQuestionController extends Controller
 
 
 		$topic = Topic::where('published', true)->where('id',$topic_id)->firstOrFail();	
-		$node = TopicNode::where('node_id',$node_id)->where('topic_id',$topic_id)->firstOrFail();
+		$node = TopicNode::where('id',$node_id)->where('topic_id',$topic_id)->firstOrFail();
 
 		$hasAccess=false;
 		foreach($topic->user_route() as $route)
 		{
 			if($route->id==$node->id)$hasAccess=true;
 		}
-		if(!$topic->published)$hasAccess=false;
 		if(Auth::user()->admin)$hasAccess=true;
 		if(!$hasAccess)
 		{
@@ -152,20 +152,28 @@ class LabLessonQuestionController extends Controller
 		//multiply and vuln
 		
 
-		
+		$user=Auth::user();
 		$userLabLessonQuestion= new UserLabLessonQuestion;
 		$userLabLessonQuestion->correct=FALSE;
 		$userLabLessonQuestion->lab_lesson_question_id=$question->id;
 		$userLabLessonQuestion->user_topic_node_id=$userNode->id;
 		$userLabLessonQuestion->answer=$request->input('answer');
 		if($question->type=='yes')
+		{
+			$user->user_statistic->score=$user->user_statistic->score+$question->score;
+			$user->user_statistic->total_score=$user->user_statistic->total_score+$question->score;
+			$user->user_statistic->save();
+
 			$userLabLessonQuestion->correct=TRUE;
-	
+		}
 		if($question->type=='string')
 		{
 			similar_text($question->answer->answer,$request->input('answer'),$similar_answers);
 			if($similar_answers>80)
 			{
+				$user->user_statistic->score=$user->user_statistic->score+$question->score;
+				$user->user_statistic->total_score=$user->user_statistic->total_score+$question->score;
+				$user->user_statistic->save();
 				$userLabLessonQuestion->correct=TRUE;
 			}
 		}
@@ -177,6 +185,9 @@ class LabLessonQuestionController extends Controller
 				similar_text($answer->answer,$request->input('answer'),$similar_answers);
 				if($similar_answers>90)
 				{
+						$user->user_statistic->score=$user->user_statistic->score+$question->score;
+						$user->user_statistic->total_score=$user->user_statistic->total_score+$question->score;
+						$user->user_statistic->save();
 						$userLabLessonQuestion->correct=TRUE;
 						break;
 				}

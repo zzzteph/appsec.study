@@ -95,12 +95,14 @@ class User extends Authenticatable implements MustVerifyEmail
     {
 		return UserCloudVm::where('user_id', $this->id)->where('type', 'lab')->where('status', '!=','terminated')->first();
     }
-
-
-
 	public function user_statistic()
     {
         return $this->hasOne(UserStatistic::class);
     }
+	
+
+	
+	
+	
 	
 }

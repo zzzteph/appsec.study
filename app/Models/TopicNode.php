@@ -43,6 +43,14 @@ class TopicNode extends Model
 		return $this->hasOne(UserTopicNode::class)->where('user_id',Auth::user()->id);
 	}
 
+	public function users_topic_nodes()
+	{
+		return $this->hasOne(UserTopicNode::class);
+	}
+
+
+
+
 	public function lesson()
     {
 		return $this->belongsTo(Lesson::class);

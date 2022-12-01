@@ -14,7 +14,7 @@ class TopicsController extends Controller
 	public function list()
     {
 		
-		$topics=Topic::orderBy('order', 'asc')->get();
+		$topics=Topic::where('type','course')->orderBy('order', 'asc')->get();
 
 		return view('admin.content.topics.list',['topics'=>$topics]);
     }
@@ -28,7 +28,7 @@ class TopicsController extends Controller
 	
 	public function edit($topic_id)
     {
-		return view('admin.content.topics.edit',['topic' =>Topic::findOrFail($topic_id)]);
+		return view('admin.content.topics.edit',['topic' =>Topic::where('type','course')->findOrFail($topic_id)]);
     }
 	
 	
@@ -67,6 +67,7 @@ class TopicsController extends Controller
 
 		$topic=new Topic;
 		$topic->name=$request->input('name');
+		$topic->type='course';
 		$topic->description=$request->input('description');
 		if($request->filled('published'))
 			$topic->published=TRUE;
@@ -81,7 +82,7 @@ class TopicsController extends Controller
 
 	public function delete(Request $request,$topic_id)
 	{	
-		 Topic::where('id', $topic_id)->delete();
+		 Topic::where('type','course')->where('id', $topic_id)->delete();
 		return redirect()->route('admin-list-topics');
 	}
 
@@ -89,7 +90,7 @@ class TopicsController extends Controller
 	
 	public function decrease($topic_id)
 	{
-		$topic=Topic::findOrFail($topic_id);
+		$topic=Topic::where('type','course')->findOrFail($topic_id);
 		if($topic->order>0)
 		$topic->order=$topic->order-1;
 		
@@ -101,7 +102,7 @@ class TopicsController extends Controller
 	public function increase($topic_id)
 	{
 		
-		$topic=Topic::findOrFail($topic_id);
+		$topic=Topic::where('type','course')->findOrFail($topic_id);
 		$topic->order=$topic->order+1;
 		
 		$topic->save();

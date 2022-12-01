@@ -13,7 +13,7 @@ use App\Http\Controllers\Web\UsersAdminController;
 use App\Http\Controllers\Web\TaskController;
 use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\UserVmsController;
-
+use App\Http\Controllers\Web\TournamentsController;
 
 
 use App\Http\Controllers\Web\Admin\VmsController;
@@ -182,9 +182,13 @@ Route::middleware(['auth','verified'])->group(function () {
 	
 	//tournaments
 	
-	Route::get('tournaments', [TopicsController::class, 'list'])->name('list-tournaments');
-	Route::get('tournaments/{id}', [TopicsController::class, 'view'])->name('view-tournament');
+	Route::get('tournaments', [TournamentsController::class, 'list'])->name('list-tournaments');
+	Route::get('tournaments/{id}', [TournamentsController::class, 'view'])->name('view-tournament');
+	Route::get('tournaments/{id}/task/{node_id}', [NodesController::class, 'view'])->name('view-tournament-task');
 	
+	
+	Route::get('tournaments/archived', [TournamentsController::class, 'list_archived'])->name('list-archived-tournaments');
+	Route::get('tournaments/archived/{id}', [TournamentsController::class, 'view_archived'])->name('view-archived-tournaments');
 	
 	
 	

@@ -31,7 +31,7 @@ class NodesController extends Controller
     {
 		$topic=Topic::findOrFail($topic_id);
 		//prevent updating tournament if it started
-		if($topic->type='tournament')
+		if($topic->type=='tournament')
 		{
 			if(Carbon::now()->diffInDays($topic->start_at)<=0 && $topic->published==true)
 			{

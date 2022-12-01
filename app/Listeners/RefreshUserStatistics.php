@@ -11,7 +11,7 @@ use App\Models\UserCloudVm;
 use App\Models\UserTopicNode;
 use App\Models\UserLabLessonQuestion;
 use App\Models\UserLabLessonQuestionHint;
-
+use App\Models\TopicLeaderboard;
 use Carbon\Carbon;
 
 class RefreshUserStatistics  implements ShouldQueue
@@ -21,7 +21,7 @@ class RefreshUserStatistics  implements ShouldQueue
      *
      * @return void
      */
-	public $queue = 'listener';
+	public $queue = 'listeners';
 
     public function __construct()
     {
@@ -36,24 +36,18 @@ class RefreshUserStatistics  implements ShouldQueue
      */
     public function handle(UserStatisticsChange $event)
     {
-        $user=$event->user;
+        $user_topic=$event->node;
+		$user=$user_topic->user;
 		$user_topics=UserTopicNode::where('user_id',$user->id)->get();
 		$user->user_statistic->lessons_done=UserTopicNode::where('user_id',$user->id)->where('status','!=','todo')->count();
 		$user->user_statistic->answers=0;
 		$user->user_statistic->correct_answers=0;
+		$userLabsDoneCount=0;
 		foreach($user_topics as $user_topic)
 		{
 			$user->user_statistic->answers+=$user_topic->questions_count;
 			$user->user_statistic->correct_answers+=$user_topic->questions_correct_count;
-		}
-		
-		
-		$user_lessons=UserTopicNode::where('user_id',$user->id)->get();
-		$userLabsDoneCount=0;
-		foreach($user_lessons as $user_lesson)
-		{
-			//we can't remove user statistics, but can supress it
-			if($user_lesson->topic_node->lesson->type=='lab')
+			if($user_topic->topic_node->lesson->type=='lab')
 				$userLabsDoneCount++;
 		}
 		$user->user_statistic->labs_done=$userLabsDoneCount;
@@ -64,37 +58,43 @@ class RefreshUserStatistics  implements ShouldQueue
 			$userTimeSpend+=$vm->updated_at->diffInSeconds($vm->created_at);
 		}
 		$user->user_statistic->labs_time_spend=$userTimeSpend;
-		//score calculating
-		$score=0;
-		foreach($user_lessons as $user_lesson)
+		$user->user_statistic->save();
+		
+		//updating topic leaderboards
+		
+		
+		$topic= $user_topic->topic_node->topic;
+		$topic_leaderboard=TopicLeaderboard::where('topic_id',$topic->id)->where('user_id',$user->id)->first();
+		$topic_score=0;
+		if($topic_leaderboard==null)
 		{
-			if($user_lesson->topic_node->lesson->type=='theory')
-				$score+=$user_lesson->topic_node->lesson->theory->score;
-		}			
-		//
-
-		foreach($user_topics as $user_topic)
+			$topic_leaderboard=new TopicLeaderboard;
+		}
+		$timespend=0;
+		foreach($topic->topic_nodes as $topic_node)
 		{
-			foreach($user_topic->user_lab_lesson_questions as $user_answer)
+			//it's job task, so we can't use user_topic_node function, cause it uses Auth facade
+			$user_topic_node=UserTopicNode::where('user_id',$user->id)->where('topic_node_id',$topic_node->id)->first();
+			if($user_topic_node==null)continue;
+			foreach($user_topic_node->user_lab_lesson_questions as $user_question)
 			{
-				if($user_answer->correct==TRUE)
-				$score+=$user_answer->lab_lesson_question->score;
-				
+				if($user_question->correct)
+				{
+					$topic_score+=$user_question->lab_lesson_question->score;
+				}
 			}
-			
+			$user_vms=UserCloudVm::where('user_id',$user->id)->where('topic_node_id',$topic_node->id)->get();
+			foreach($user_vms as $user_vm)
+			{
+				$timespend+=$user_vm->updated_at->diffInSeconds($user_vm->created_at);
+			}
 		}
-		$hints=UserLabLessonQuestionHint::where('user_id',$user->id)->get();
-		$user_score=$score;
-		foreach($hints as $hint)
-		{
-			$user_score=$user_score-$hint->lab_lesson_question_hint->price;
-		}
+		$topic_leaderboard->user_id=$user->id;
+		$topic_leaderboard->topic_id=$topic->id;
+		$topic_leaderboard->score=$topic_score;
+		$topic_leaderboard->timespend=$timespend;
+		$topic_leaderboard->save();
 		
 		
-
-		
-			$user->user_statistic->score=$user_score;
-			$user->user_statistic->total_score=$score;
-			$user->user_statistic->save();
     }
 }

@@ -14,15 +14,22 @@ class UserTopicNode extends Model
         return $this->belongsTo(TopicNode::class);
     }
  
+ 	public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+ 
+ 
+ 
 	protected static function booted()
     {
         static::created(function ($entry) {
 			
-				event(new UserStatisticsChange(User::find($entry->user_id)));
+				event(new UserStatisticsChange($entry));
         });
 		
 		static::updated(function ($entry) {
-						event(new UserStatisticsChange(User::find($entry->user_id)));
+						event(new UserStatisticsChange($entry));
         });
 		
 		

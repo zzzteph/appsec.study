@@ -171,7 +171,7 @@ class Topic extends Model
 	public function getIsTournamentPlannedAttribute()
 	{
 		if($this->type!=='tournament')return FALSE;
-		if(Carbon::now()->diffInDays($this->start_at)>0 && $topic->published==true)
+		if(Carbon::now()->diffInDays($this->start_at)>0 && $this->published==true)
 		{
 				return TRUE;
 		}
@@ -182,7 +182,7 @@ class Topic extends Model
 	public function getIsTournamentStartedAttribute()
 	{
 		if($this->type!=='tournament')return FALSE;
-		if(Carbon::now()->diffInDays($this->start_at)<=0 && $topic->published==true && Carbon::now()->diffInDays($this->ends_at)>=0)
+		if(Carbon::now()->diffInDays($this->start_at)<=0 && $this->published==true && Carbon::now()->diffInDays($this->ends_at)>=0)
 		{
 				return TRUE;
 		}
@@ -191,10 +191,28 @@ class Topic extends Model
 		public function getIsTournamentArchivedAttribute()
 	{
 		if($this->type!=='tournament')return FALSE;
-		if(Carbon::now()->diffInDays($this->start_at)<=0 && $topic->published==true && Carbon::now()->diffInDays($this->ends_at)<=0)
+		if(Carbon::now()->diffInDays($this->start_at)<=0 && $this->published==true && Carbon::now()->diffInDays($this->ends_at)<=0)
 		{
 				return TRUE;
 		}
 		return FALSE;
 	}
+	
+	public function getLeaderboardAttribute()
+	{
+		
+	}
+	
+	
+	
+	public function getEndsInTimeAttribute()
+	{
+		if(Carbon::now()->diffInDays($this->ends_at)>0)return (Carbon::now()->diffInDays($this->ends_at))." days";
+		if(Carbon::now()->diffInHours($this->ends_at)>0)return (Carbon::now()->diffInHours($this->ends_at))." hours";
+		if(Carbon::now()->diffInMinutes($this->ends_at)>0)return (Carbon::now()->diffInMinutes($this->ends_at))." minutes";
+		return 0;
+	}
+	
+	
+	
 }
