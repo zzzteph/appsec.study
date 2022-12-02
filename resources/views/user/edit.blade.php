@@ -3,6 +3,20 @@
 
 
 	 <section class="section">
+	 <div class="container">
+      <nav class="breadcrumb" aria-label="breadcrumbs">
+         <ul>
+            <li><a href="{{route('users')}}">Users</a></li>
+			
+            <li><a href="{{route('user-page',['id'=>$user->id])}}" >{{$user->name}}</a></li>
+			<li class="is-active"><a href="#" >Profile update</a></li>
+         </ul>
+      </nav>
+	  <hr/>
+</div>
+	 
+	 
+	 
 		 <div class="container">
 
 <form method="POST" enctype="multipart/form-data" action="{{route('update-user-page',['id' => $user->id])}}">
@@ -57,7 +71,7 @@
 
 <div class="field">
   <div class="control">
-    <button class="button is-success is-large">Save</button>
+    <button class="button is-success">Update profile</button>
   </div>
 </div>
 </form>

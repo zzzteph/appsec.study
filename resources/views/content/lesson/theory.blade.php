@@ -1,5 +1,5 @@
 @include('include.header')
-<section class="section pt-3">
+<section class="section">
    <div class="container">
       <nav class="breadcrumb" aria-label="breadcrumbs">
          <ul>
@@ -7,6 +7,8 @@
             <li class="is-active"><a href="#" >{{$lesson->theory->header}}</a></li>
          </ul>
       </nav>
+	  
+	  
 	     @if($node->status=='success')
       <h1 class="title has-text-success">
       

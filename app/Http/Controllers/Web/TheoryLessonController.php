@@ -22,7 +22,10 @@ class TheoryLessonController extends Controller
 		//check if userLesson exist
 
 		$topic=Topic::findOrFail($topic_id);
-		
+		if($topic->type=='tournament' && !$topic->is_tournament_started)
+		{
+			return back()->withErrors([	'message' => 'Sorry, tournament is over']);
+		}
 		$node=TopicNode::where('id',$node_id)->where('topic_id',$topic->id)->first();
 		if($topic->structure=='graph')
 		{
@@ -47,6 +50,10 @@ class TheoryLessonController extends Controller
 		}
 		$userTopicNode->status='success';
 		$userTopicNode->save();
+				if($topic->type=='tournament')
+		{
+			return redirect()->route('view-tournament', ['id' => $topic_id]);
+		}
 		return redirect()->route('lessons', ['topic_id' => $topic_id]);
     }
 
@@ -55,6 +62,12 @@ class TheoryLessonController extends Controller
 		//check if userLesson exist
 
 		$topic=Topic::findOrFail($topic_id);
+		
+		if($topic->type=='tournament' && !$topic->is_tournament_started)
+		{
+			return back()->withErrors([	'message' => 'Sorry, tournament is over']);
+		}
+		
 		$node=TopicNode::where('id',$node_id)->where('topic_id',$topic->id)->first();
 		if($topic->structure=='graph')
 		{
@@ -79,9 +92,12 @@ class TheoryLessonController extends Controller
 			
 		}
 		
-			$userTopicNode->status='fail';
-		
+		$userTopicNode->status='fail';
 		$userTopicNode->save();
+		if($topic->type=='tournament')
+		{
+			return redirect()->route('view-tournament', ['id' => $topic_id]);
+		}
 		return redirect()->route('lessons', ['topic_id' => $topic_id]);
     }
 

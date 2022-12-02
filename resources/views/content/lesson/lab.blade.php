@@ -1,11 +1,11 @@
 @include('include.header')
 
-<section class="section pt-3">
+<section class="section">
    <div class="container">
       <nav class="breadcrumb" aria-label="breadcrumbs">
          <ul>
 
-            <li><a href="{{route('lessons',['topic_id' => $topic->id])}}">{{$topic->name}}</a></li>
+             <li><a href="{{route('lessons',['topic_id' => $topic->id])}}">{{$topic->name}}</a></li>
             <li class="is-active"><a href="#" >{{$lesson->lab->name}}</a></li>
          </ul>
       </nav>
@@ -51,22 +51,12 @@
             <progress class="progress is-small is-danger" v-if="vm.status=='stopping'" :value="vm.progress" max="100">@{{vm.progress}}%</progress>	  
          </div>
          @elseif(!is_null($task) && ($task->topic_node_id==$node->id) &&  ($task->status=='running'))
-         
-         
-         @if($lesson->lab->type=='attack')
+
          <div class="block" id="app">
             <div class="content">
                <p><a href="http://{{$task->ip}}" class="button is-success is-fullwidth" target="_blank"> Open Lab</a></p>
             </div>
          </div>
-          @elseif($lesson->lab->type=='defense')
-         <div class="block" id="app">
-            <div class="content">
-               <p><a href="http://{{$task->ip}}" class="button is-success is-fullwidth" target="_blank"> Open Lab</a></p>
-               <p><a href="http://{{$task->ip}}:8081/" class="button is-warning is-fullwidth" target="_blank"> Edit code</a></p>
-            </div>
-         </div>
-		@endif
 
 
 
@@ -114,7 +104,7 @@
    </div>
    <div class="container">
    <div class="icon-text is-size-5  is-align-items-center">
-      <span class="icon has-text-info is-large">
+      <span class="icon is-large">
       <i class="fas fa-question-circle fas fa-lg"></i>
       </span>
       <span>{{$lesson->lab->correct_questions($node->user_topic_node->id)}} of {{$lesson->lab->questions_count}}</span>

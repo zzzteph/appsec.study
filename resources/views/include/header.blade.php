@@ -4,18 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 	<script href="{{asset('js/jquery.js')}}" type="text/javascript"></script>
-    <link rel="stylesheet" href="{{asset('css/bulma.css')}}">
-	<link rel="stylesheet" href="{{asset('css/style.css')}}">
-
+    <link rel="stylesheet" href="{{asset('css/bulma.min.css')}}">
+	<link rel="stylesheet" href="{{asset('css/inter.css')}}">
 	 <script defer src="{{asset('fontawesome/js/all.js')}}" type="text/javascript"></script>
 	 <script src="{{asset('js/vue.js')}}" type="text/javascript"></script>
 	 <script src="{{asset('js/axios.min.js')}}" type="text/javascript"></script>
 
-	 
-	 
-	 
-	 
-	 <style type="text/css" media="screen">
+	    <style type="text/css" media="screen">
       body {
         display: flex;
         min-height: 100vh;
@@ -25,27 +20,27 @@
         flex: 1;
       }
     </style>
-
   </head>
 <body>
-	<section class="section pt-3 pb-3	">
- <div class="container is-size-5">
 
-<nav class="navbar" role="navigation" aria-label="main navigation">
-  <div class="navbar-brand">
-    <a class="navbar-item" href="{{route('main')}}">
-  <img src="/logo.png" class="image">
-    </a>
+    <div class="">
+                
+      
+      
+                
+      <nav class="navbar py-4">
+        <div class="container">
+          <div class="navbar-brand">
+            <a class="navbar-item" href="{{route('main')}}"><img src="{{asset('appsec.png')}}" alt="" width="100"></a>
+            <a class="navbar-burger" role="button" aria-label="menu" aria-expanded="false">
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+            </a>
+          </div>
+          <div class="navbar-menu">
+            <div class="navbar-start">
 
-    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-    </a>
-  </div>
-
-  <div id="navbarBasicExample" class="navbar-menu is-size-5">
-    <div class="navbar-start">
 
       <a class="navbar-item" href="{{route('users')}}">
         Scoreboard
@@ -88,10 +83,6 @@
         <a class="navbar-link">
           CMS
         </a>
-
-
-
-
         <div class="navbar-dropdown">
 	       <a class="navbar-item" href="{{route('admin-view-lessons')}}">
             Lessons
@@ -102,26 +93,23 @@
 		 <a class="navbar-item" href="{{route('admin-list-tournaments')}}">
            Tournaments
           </a>
-
-
-
-
-
         </div>
       </div>
-
-
-
-
-
 	@endif
 @endauth
 
 
-    </div>
 
-       <div class="navbar-end">
-      <div class="navbar-item">
+
+
+
+
+
+      </div>
+	  
+	  
+	         <div class="navbar-end">
+    
 
 
 
@@ -130,19 +118,35 @@
 	  @auth
 
 
+	       <a class="navbar-item" href="#">
+		   
+		   
+		   
+		   	 <span class="icon-text is-align-items-center">
+ 
+                  <span> {{Auth::user()->user_statistic->score/100}}</span>
+				  
+				   <span class="icon">
+					<i class="fas fa-coins"></i>
+                  </span>
+				  
+                  </span>
+          </a>
 
 
+          <a class=" navbar-item is-primary-light" href="{{ route('user-page',['id' => Auth::id()]) }}">
+            My page
+          </a>
 
 
-
-
+  <div class="navbar-item">
 	  	          <div class="buttons">
 
 
 	@if(!is_null(Auth::user()->current_user_lab_vm()) && Auth::user()->current_user_lab_vm()->status!="terminated")
 
 	<div id="timer">
-		  <a class="button is-primary is-size-5 mr-3" href="{{route('view-lesson',[
+		  <a class="button is-primary" href="{{route('view-lesson',[
 		  'topic_id'=>Auth::user()->current_user_lab_vm()->node()->topic->id,
 		  'node_id'=>Auth::user()->current_user_lab_vm()->node()->node_id
 		  ])}}"  v-if="vm.status == 'running'">
@@ -187,28 +191,12 @@
 
 	@endif
 
-	       <a class="navbar-item" href="#">
-		   
-		   
-		   
-		   		          <span class="icon-text is-align-items-center">
- 
-                  <span> {{Auth::user()->user_statistic->score/100}}</span>
-				  
-				   <span class="icon">
-					<i class="fas fa-coins"></i>
-                  </span>
-				  
-                  </span>
-          </a>
 
-          <a class="button is-primary-light is-size-5" href="{{ route('user-page',['id' => Auth::id()]) }}">
-            My page
-          </a>
+
 			<form method="POST"  action="{{route('logout')}}">
 		@method('DELETE')
 			@csrf
-            <button class="button is-danger is-size-5">Exit</button>
+            <button class="button is-black">Log out</button>
 			</form>
         </div>
 
@@ -229,13 +217,14 @@
 
 
     </div>
-  </div>
-</nav>
-
-
-
-	@if ($errors->any() || Session::has('success'))
-
+	  
+            
+          </div>
+        </div>
+      </nav>
+@if ($errors->any() || Session::has('success'))
+	<section class="section">
+ <div class="container">
 	 <div class="container is-size-5">
 @if ($errors->any())
 							<article class="message is-danger">
@@ -271,8 +260,9 @@
 
  </div>
 
-@endif
+
 
 </div>
 </section>
-<div id="wrapper">
+@endif
+

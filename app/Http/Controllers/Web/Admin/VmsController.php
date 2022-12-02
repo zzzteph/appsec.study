@@ -15,7 +15,7 @@ class VmsController extends Controller
 	
 	public function get()
     {
-      return view('vms.index', [
+      return view('admin.vms.index', [
             'vms' => Vm::orderBy('id')->paginate(15)
         ]);
     }

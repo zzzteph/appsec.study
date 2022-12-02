@@ -4,7 +4,7 @@
 
 	 <section class="section">
 		 <div class="container">
-		 
+		 <h1 class="title">Users management</h1>
 		 @if ($errors->any())
 <article class="message is-danger">
   <div class="message-header">

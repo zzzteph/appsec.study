@@ -198,11 +198,31 @@ class Topic extends Model
 		return FALSE;
 	}
 	
-	public function getLeaderboardAttribute()
+	public function topic_leaderboards()
 	{
-		
+		return $this->hasMany(TopicLeaderboard::class);
 	}
 	
+		public function getUserScoreInLeaderboardAttribute()
+	{
+			$entry=$this->hasOne(TopicLeaderboard::class)->where('user_id',Auth::id())->first();
+			
+			if($entry==null)return 0;
+			return $entry->score;
+			
+	}
+	public function getUserPlaceInLeaderboardAttribute()
+	{
+			$user_id=Auth::id();
+			$entries=TopicLeaderboard::where('topic_id',$this->id)->orderBy('score','DESC')->orderBy('timespend','ASC')->get();
+			$place=0;
+			foreach($entries as $entry)
+			{
+				$place++;
+				if($entry->user_id==$user_id)return $place;				
+			}
+			return FALSE;		
+	}
 	
 	
 	public function getEndsInTimeAttribute()

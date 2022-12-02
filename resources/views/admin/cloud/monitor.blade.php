@@ -5,7 +5,7 @@
 	 <section class="section">
 		 <div class="container">
 
-
+<h1 class="title">Monitoring</h1>
 
 
 <table class="table is-fullwidth">

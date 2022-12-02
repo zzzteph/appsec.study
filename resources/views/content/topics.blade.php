@@ -1,57 +1,76 @@
 @include('include.header')
-<section class="section pt-3">
+<section class="section">
+
    <div class="container">
-     
-      <nav class="breadcrumb" aria-label="breadcrumbs">
+   <h1 class="title">Courses</h1>
+   
+  @foreach ($topics as $topic)
+	@if($loop->iteration%4==0 && !$loop->first)
+	</div>
+	<div class="columns is-multiline">
+   @endif
+   @if($loop->first)
+   <div class="columns is-multiline">
+   @endif
+   
+   <div class="column is-4-desktop">
 
-      </nav>
+		   <div class="box">
 
+            <h2 class="mb-2 is-size-3 is-size-4-mobile has-text-weight-bold has-text-black">  <a class="has-text-primary is-underlined" href="{{route('lessons',['topic_id' => $topic->id])}}">{{$topic->name}}</a></h2>
+			   @if($topic->is_done)
+       <span class="tag is-primary">Done</span>
+		@endif
+		<div class="content">
+		
+		<p>{{$topic->description}}</p>
+		
+		</div>
+			
+            <table class="table is-fullwidth ">
+               <tbody>
+			    @if($topic->theory_lesson_done_count!=0)
+			      <tr>
+                     <td>Theory</td>
+                     <td>
+					
+						{{$topic->theory_lesson_done_count}}
+					
+					 
+					 </td>
+                  </tr>
+				   @endif
+			    @if($topic->lab_lesson_done_count!=0)
+			   	<tr>
+                     <td>Labs</td>
+                     <td>
+					
+						{{$topic->lab_lesson_done_count}}
+					
+					 
+					 </td>
+                  </tr>
+				   @endif
+				     @if($topic->user_score_in_leaderboard>0)
+				<tr>
+                     <td>Score</td>
+                     <td>
+					 {{$topic->user_score_in_leaderboard}}
+					 </td>
+                  </tr>  
+				   @endif
+				  
+				  
+               </tbody>
+            </table>
+		
+			<x-topic-leaderboard :topic="$topic" :limit="5" />
+         </div>
+      </div>
+      @if($loop->last)
    </div>
-   <hr/>
-   <div class="container">
-      @foreach ($topics as $topic)
-      <a href="{{route('lessons',['topic_id' => $topic->id])}}">
-         @if($topic->is_done)
-         <article class="media box has-background-success-light">
-         @else
-         <article class="media box">
-            @endif
-            <div class="media-content">
-               <div class="content">
-                  <p>
-                     <strong class="is-size-4">{{$topic->name}}</strong>
-                     <p>
-                     {!! $topic->description !!}
-					 </p>
-                  </p>
-               </div>
-            </div>
-            <div class="media-right">
-               @if($topic->theory_lesson_done_count!=0)
-               <p>
-                  <span class="icon-text  is-size-5  is-align-items-center">
-                  <span class="icon is-large">
-                  <i class="fas fa-tasks fa-lg"></i>
-                  </span>
-                  <span>{{$topic->theory_lesson_done_count}}</span>
-                  </span>
-               </p>
-               @endif
-               @if($topic->lab_lesson_done_count!=0)
-               <p>
-                  <span class="icon-text  is-size-5 is-align-items-center">
-                  <span class="icon is-large">
-                  <i class="fas fa-flask fa-lg"></i>
-                  </span>
-                  <span>{{$topic->lab_lesson_done_count}}</span>
-                  </span>
-               </p>
-               @endif
-            </div>
-         </article>
-      </a>
-	  <br/>
-      @endforeach
+   @endif 
+   @endforeach
    </div>
 </section>
 @include('include.footer')

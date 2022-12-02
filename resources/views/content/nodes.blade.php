@@ -1,10 +1,12 @@
 @include('include.header')
-<section class="section pt-3">
+<section class="section">
+
    <div class="container">
     
       <nav class="breadcrumb" aria-label="breadcrumbs">
          <ul>
-            <li class="is-active"><a href="#" >{{$topic->name}}</a></li>
+            <li><a href="{{route('topics')}}" >Courses</a></li>
+			<li class="is-active"><a href="#" >{{$topic->name}} </a></li>
          </ul>
       </nav>
 	    <h1 class="title"> {{$topic->name}} </h1>

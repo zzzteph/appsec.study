@@ -9,13 +9,12 @@ use App\Http\Controllers\Web\TheoryLessonController;
 use App\Http\Controllers\Web\LabLessonController;
 use App\Http\Controllers\Web\LabLessonQuestionController;
 use App\Http\Controllers\Web\NodesController;
-use App\Http\Controllers\Web\UsersAdminController;
 use App\Http\Controllers\Web\TaskController;
 use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\UserVmsController;
 use App\Http\Controllers\Web\TournamentsController;
 
-
+use App\Http\Controllers\Web\Admin\UsersAdminController;
 use App\Http\Controllers\Web\Admin\VmsController;
 use App\Http\Controllers\Web\Admin\CloudController;
 use App\Http\Controllers\Web\Admin\TournamentsController as AdminTournaments;
