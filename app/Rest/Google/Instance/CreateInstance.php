@@ -15,24 +15,23 @@ use Google\ApiCore\ApiException;
 
 class CreateInstance 
 {
-  //  string $projectId="appsecstudy",
-   // string $zone=,
-    private $machineType;// = ,
-    private $sourceImage;// = 'projects/appsecstudy/global/images/rce-attack-1',
-    private $networkName;// = ''
-		private $zone;
-	private $projectId;
+
+    private $machine;
+    private $sourceImage;
+    private $network;
+	private $zone;
+	private $project;
 	private $keypath;
 	private $instanceName;
 	
-	public function __construct($instanceName=null,$sourceImage=null,$projectId=null,$keypath=null) {
-		$this->projectId=$projectId;
+	public function __construct($instanceName,$sourceImage,$project,$machine,$zone,$network,$keypath) {
+		$this->project=$project;
 		$this->keypath=$keypath;
 		$this->instanceName=$instanceName;
-		$this->machineType='n1-standard-1';
-		$this->networkName="global/networks/default";
+		$this->machine=$machine;
+		$this->network=$network;
 		$this->sourceImage=$sourceImage;
-		$this->zone="europe-west1-b";
+		$this->zone=$zone;
     }
 	
 	
@@ -46,10 +45,10 @@ class CreateInstance
 	
 	
 			putenv('GOOGLE_APPLICATION_CREDENTIALS='.$this->keypath);
-			$machineTypeFullName = sprintf('zones/%s/machineTypes/%s', $this->zone,  $this->machineType);
+			$machineTypeFullName = sprintf('zones/%s/machineTypes/%s', $this->zone,  $this->machine);
 			$diskInitializeParams = (new AttachedDiskInitializeParams()) ->setSourceImage( $this->sourceImage);
 			$disk = (new AttachedDisk())->setBoot(true) ->setAutoDelete(true)->setInitializeParams($diskInitializeParams);
-			$network = (new NetworkInterface())        ->setName( $this->networkName);
+			$network = (new NetworkInterface())        ->setName( $this->network);
 
 				$networkConfig = new AccessConfig();
 				$shled=new Scheduling();
@@ -68,7 +67,7 @@ class CreateInstance
 			try
 			{
 			
-				$instancesClient->insert($instance, $this->projectId, $this->zone);
+				$instancesClient->insert($instance, $this->project, $this->zone);
 			}
 			catch(ApiException $e)
 			{

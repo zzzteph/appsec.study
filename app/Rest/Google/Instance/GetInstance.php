@@ -20,12 +20,12 @@ use Google\ApiCore\ApiException;
 
 class GetInstance 
 {
-	private $projectId;
+	private $project;
 	private $keypath;
 	private $name;
 	
-	public function __construct($name=null,$projectId=null,$keypath=null) {
-		$this->projectId=$projectId;
+	public function __construct($name=null,$project=null,$keypath=null) {
+		$this->project=$project;
 		$this->keypath=$keypath;
 		$this->name=$name;
 		
@@ -41,7 +41,7 @@ class GetInstance
 		try
 		{
 			$instancesClient = new InstancesClient();
-			$allInstances = $instancesClient->aggregatedList($this->projectId);
+			$allInstances = $instancesClient->aggregatedList($this->project);
 			foreach ($allInstances as $zone => $zoneInstances) {
 				$instances = $zoneInstances->getInstances();
 				if (count($instances) > 0) {

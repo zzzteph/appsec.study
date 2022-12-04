@@ -62,7 +62,9 @@
 
 
         <div class="navbar-dropdown">
-
+          <a class="navbar-item" href="{{route('cloud-view')}}">
+            Cloud config
+          </a>
           <a class="navbar-item" href="{{route('vms')}}">
             VMS
           </a>

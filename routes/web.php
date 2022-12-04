@@ -85,7 +85,9 @@ Route::middleware(['auth', AdminAccess::class])->prefix('admin')->group(function
 	Route::put('tournaments/{topic_id}/lessons', [AdminNodes::class, 'update'])->name('admin-tournaments-nodes-update');
 	
 	
-
+	Route::get('/cloud', [CloudController::class, 'view'])->name('cloud-view');
+	Route::post('/cloud', [CloudController::class, 'create'])->name('cloud-create');
+	Route::put('/cloud', [CloudController::class, 'update'])->name('cloud-update');
 	//admin cloud-tasks monitor
 	Route::get('/cloud/tasks', [CloudController::class, 'monitor'])->name('monitor-task');
 	Route::put('/cloud/tasks/{task_id}', [CloudController::class, 'update_cloud_task'])->name('update-cloud-task');

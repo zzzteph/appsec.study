@@ -2,9 +2,9 @@
 
 	 <section class="section">
 		 <div class="container">
-<h1 class="title">{{$lesson->theory->header}}
+<h1 class="title">{{$lesson->theory->header}}</h1>
 
-</h1>
+
 <div class="content">
 {!! $lesson->theory->content !!}
 

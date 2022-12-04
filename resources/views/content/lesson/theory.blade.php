@@ -7,8 +7,10 @@
             <li class="is-active"><a href="#" >{{$lesson->theory->header}}</a></li>
          </ul>
       </nav>
-	  
-	  
+	<hr/>
+<br/>	
+	  </div>
+	  <div class="container">
 	     @if($node->status=='success')
       <h1 class="title has-text-success">
       

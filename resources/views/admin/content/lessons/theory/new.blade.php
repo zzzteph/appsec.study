@@ -2,7 +2,24 @@
 
 
 	 <section class="section">
+
+	 <div class="container">
+	 
+      <nav class="breadcrumb" aria-label="breadcrumbs">
+         <ul>
+            <li><a href="{{route('admin-view-lessons')}}">Lessons management</a></li>
+			<li class="is-active"><a href="#" >New Theory </a></li>
+         </ul>
+      </nav>
+	  <hr/>
+</div>
+
+
 		 <div class="container">
+<h1 class="title">New Theory lesson</h1>
+
+
+
 
 			<form method="POST" action="{{route('admin-add-new-theory-lesson')}}">
 			@csrf
@@ -17,7 +34,7 @@
 
 
 <div class="field">
-  <label class="label">Content</label>
+  <label class="label">Short description</label>
   <div class="control">
  
 <textarea class="textarea" placeholder="Textarea" name="description"></textarea>
@@ -76,7 +93,7 @@
 
 <div class="field">
   <div class="control">
-    <button class="button is-success is-large">Save</button>
+    <button class="button is-success">Save</button>
   </div>
 </div>
 </form>

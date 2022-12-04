@@ -2,13 +2,20 @@
     <section class="section">
 	
 	 <div class="container">
-		<p><a class="button is-success" href="{{route('admin-new-theory-lesson')}}">Add new theory lesson</a></p>
-		<br/>
-		<p><a class="button is-success" href="{{route('admin-new-lab-lesson')}}">Add new lab lesson</a></p>
-
-<hr/>
+	 <h1 class="title">Lessons management</h1>
+		<div class="field is-grouped">
+		
+		 <p class="control">
+			<a class="button is-success" href="{{route('admin-new-theory-lesson')}}">Add new theory lesson</a>
+		</p>
+		
+		 
+		 <p class="control">
+		<a class="button is-success" href="{{route('admin-new-lab-lesson')}}">Add new lab lesson</a></p>
+</p>
+ </div>
     </div>
-
+<br/>
 		 <div class="container">
 
 

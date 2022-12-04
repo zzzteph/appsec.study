@@ -20,10 +20,10 @@ use Google\Cloud\Compute\V1\Scheduling;
 
 class ListInstances 
 {
-	private $projectId;
+	private $project;
 	private $keypath;
-	public function __construct($projectId=null,$keypath=null) {
-		$this->projectId=$projectId;
+	public function __construct($project=null,$keypath=null) {
+		$this->project=$project;
 		$this->keypath=$keypath;
     }
 
@@ -37,7 +37,7 @@ class ListInstances
 		try
 		{
 			$instancesClient = new InstancesClient();
-			$allInstances = $instancesClient->aggregatedList($this->projectId);
+			$allInstances = $instancesClient->aggregatedList($this->project);
 			foreach ($allInstances as $zone => $zoneInstances) {
 				$instances = $zoneInstances->getInstances();
 				if (count($instances) > 0) {
