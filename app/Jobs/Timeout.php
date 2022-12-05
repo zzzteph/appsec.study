@@ -2,7 +2,11 @@
 
 namespace App\Jobs;
 
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
+
+
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -19,10 +23,10 @@ class Timeout implements ShouldQueue
      */
 	 public $timeout = 600;
 	 protected $uservm;
-	 private $response;
 
     public function __construct(UserCloudVm $uservm)
     {
+		$this->onQueue('cloud');
          $this->uservm=$uservm;
 
     }

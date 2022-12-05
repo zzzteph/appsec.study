@@ -50,7 +50,7 @@
             <span class="icon is-large">
             <i class="fas fa-coins fa-lg"></i>
             </span>
-            <span>{{$user->user_statistic->score}} points</span>
+            <span>{{$user->user_statistic->total_score}}</span>
             </span>
          </div>
          <div class="column ">

@@ -4,6 +4,32 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+DROP TABLE IF EXISTS `cloud_configs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `cloud_configs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `cloud_id` bigint(20) unsigned NOT NULL,
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` varchar(512) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cloud_configs_cloud_id_foreign` (`cloud_id`),
+  CONSTRAINT `cloud_configs_cloud_id_foreign` FOREIGN KEY (`cloud_id`) REFERENCES `clouds` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `clouds`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `clouds` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `type` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `failed_jobs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -167,6 +193,24 @@ CREATE TABLE `theory_lessons` (
   CONSTRAINT `theory_lessons_lesson_id_foreign` FOREIGN KEY (`lesson_id`) REFERENCES `lessons` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `topic_leaderboards`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `topic_leaderboards` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `topic_id` bigint(20) unsigned NOT NULL,
+  `score` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `timespend` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `topic_leaderboards_user_id_foreign` (`user_id`),
+  KEY `topic_leaderboards_topic_id_foreign` (`topic_id`),
+  CONSTRAINT `topic_leaderboards_topic_id_foreign` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `topic_leaderboards_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `topic_node_conditions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -227,6 +271,10 @@ CREATE TABLE `topics` (
   `order` int(11) NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `structure` enum('graph','linear') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'linear',
+  `type` enum('course','tournament','evaluation') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'course',
+  `start_at` date DEFAULT NULL,
+  `ends_at` date DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -239,11 +287,11 @@ CREATE TABLE `user_cloud_vms` (
   `ip` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `instance_id` varchar(512) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `progress` int(11) NOT NULL DEFAULT 0,
-  `type` enum('lab','user') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'lab',
   `status` enum('todo','starting','running','tostop','stopping','terminated') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'todo',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `topic_node_id` bigint(20) unsigned NOT NULL,
+  `template_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `user_cloud_vms_user_id_foreign` (`user_id`),
   CONSTRAINT `user_cloud_vms_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
@@ -258,11 +306,14 @@ CREATE TABLE `user_lab_lesson_question_hints` (
   `user_id` bigint(20) unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `user_topic_node_id` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `user_lab_hints_id` (`lab_lesson_question_hint_id`),
   KEY `user_lab_lesson_question_hints_user_id_foreign` (`user_id`),
+  KEY `user_lab_lesson_question_hints_user_topic_node_id_foreign` (`user_topic_node_id`),
   CONSTRAINT `user_lab_hints_id` FOREIGN KEY (`lab_lesson_question_hint_id`) REFERENCES `lab_lesson_question_hints` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `user_lab_lesson_question_hints_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `user_lab_lesson_question_hints_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `user_lab_lesson_question_hints_user_topic_node_id_foreign` FOREIGN KEY (`user_topic_node_id`) REFERENCES `user_topic_nodes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `user_lab_lesson_questions`;
@@ -419,3 +470,12 @@ INSERT INTO `migrations` VALUES (59,'2022_02_20_200731_create_user_lab_lesson_qu
 INSERT INTO `migrations` VALUES (60,'2022_03_13_201826_create_notifications_table',36);
 INSERT INTO `migrations` VALUES (62,'2022_03_13_204800_update_lab_lesson_attack_defense',37);
 INSERT INTO `migrations` VALUES (63,'2022_11_29_122744_dropping_tables',38);
+INSERT INTO `migrations` VALUES (64,'2022_11_29_190805_make_linear_topics',39);
+INSERT INTO `migrations` VALUES (65,'2022_11_30_113041_create_flights_table',40);
+INSERT INTO `migrations` VALUES (66,'2022_11_30_120720_tournament_topic',41);
+INSERT INTO `migrations` VALUES (67,'2022_12_01_124222_create_topic_leaderboards_table',42);
+INSERT INTO `migrations` VALUES (68,'2022_12_01_130108_update_user_hints_table',42);
+INSERT INTO `migrations` VALUES (69,'2022_12_01_153427_update_time_spend',43);
+INSERT INTO `migrations` VALUES (70,'2022_12_03_222223_create_clouds_table',44);
+INSERT INTO `migrations` VALUES (71,'2022_12_03_222242_create_cloud_configs_table',44);
+INSERT INTO `migrations` VALUES (72,'2022_12_05_114919_update_cloud_user_vms',45);

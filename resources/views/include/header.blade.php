@@ -40,7 +40,10 @@
           </div>
           <div class="navbar-menu">
             <div class="navbar-start">
-
+      <a class="navbar-item" href="{{route('topics')}}">
+        Learn
+      </a>
+	  
 
       <a class="navbar-item" href="{{route('users')}}">
         Scoreboard
@@ -129,7 +132,7 @@
                   <span> {{Auth::user()->user_statistic->score/100}}</span>
 				  
 				   <span class="icon">
-					<i class="fas fa-coins"></i>
+					<i class="fas fa-money-bill"></i>
                   </span>
 				  
                   </span>
@@ -141,16 +144,16 @@
           </a>
 
 
-  <div class="navbar-item">
-	  	          <div class="buttons">
+  
+	  	         
 
 
 	@if(!is_null(Auth::user()->current_user_lab_vm()) && Auth::user()->current_user_lab_vm()->status!="terminated")
-
+<div class="navbar-item">
 	<div id="timer">
 		  <a class="button is-primary" href="{{route('view-lesson',[
 		  'topic_id'=>Auth::user()->current_user_lab_vm()->node()->topic->id,
-		  'node_id'=>Auth::user()->current_user_lab_vm()->node()->node_id
+		  'node_id'=>Auth::user()->current_user_lab_vm()->node()->id
 		  ])}}"  v-if="vm.status == 'running'">
 
 <span class="icon-text">
@@ -172,7 +175,7 @@
 
 <a class="navbar-item mr-3 " v-if="vm.status != 'running' && vm.status != 'terminated'" href="{{route('view-lesson',[
 		  'topic_id'=>Auth::user()->current_user_lab_vm()->node()->topic->id,
-		  'node_id'=>Auth::user()->current_user_lab_vm()->node()->node_id
+		  'node_id'=>Auth::user()->current_user_lab_vm()->node()->id
 		  ])}}">
 <span class="icon-text" >
 
@@ -188,13 +191,13 @@
 
 			</div>
 
-
+</div>
 
 
 	@endif
 
-
-
+<div class="navbar-item">
+<div class="buttons">
 			<form method="POST"  action="{{route('logout')}}">
 		@method('DELETE')
 			@csrf
@@ -202,13 +205,6 @@
 			</form>
         </div>
 
-
-	   @else
-	          <div class="buttons">
-          <a class="button is-light is-size-5" href="/login">
-            Log in
-          </a>
-        </div>
 
 	   @endauth
 

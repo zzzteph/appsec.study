@@ -1,6 +1,17 @@
 @include('include.header')
 
 	 <section class="section">
+	 
+	 	 <div class="container">
+      <nav class="breadcrumb" aria-label="breadcrumbs">
+         <ul>
+            <li><a href="{{route('admin-view-lessons')}}">Lesson management</a></li>
+            <li class="is-active"><a href="#" >{{$lesson->name}}</a></li>
+         </ul>
+      </nav>
+	  <hr/>
+</div>
+	 
 		 <div class="container">
 <h1 class="title">{{$lesson->theory->header}}</h1>
 

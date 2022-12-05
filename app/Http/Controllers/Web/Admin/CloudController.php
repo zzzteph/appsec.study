@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Models\Cloud;
 use App\Models\CloudConfig;
 use App\Models\UserCloudVm;
-use App\Jobs\Google\ActionStop;
+use App\Jobs\StopVM;
 use Illuminate\Support\Facades\Storage;
 class CloudController extends Controller
 {
@@ -31,7 +31,7 @@ class CloudController extends Controller
 		$user_vm->progress=100;
 		$user_vm->save();
 		$user_vm->touch();
-		ActionStop::dispatch($user_vm)->onQueue('google');
+		StopVM::dispatch($user_vm);
 		return redirect()->back();
 	}
 	

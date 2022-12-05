@@ -6,9 +6,30 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Topic;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 class TournamentsController extends Controller
 {
+	
+	
+	
+	public function list_archived()
+    {
+
+		if(Auth::user()->admin)
+		{
+			$tournaments=Topic::where('type', 'tournament')->whereDate('ends_at','<',Carbon::now())->get();
+		}
+		else
+		{
+			$tournaments=Topic::where('type', 'tournament')->where('published', true)->whereDate('ends_at','<',Carbon::now())->get();
+		}
+
+		return view('content.tournaments.list',['tournaments'=>$tournaments]);
+    }
+
+
+	
 	
 	public function list()
     {
@@ -22,7 +43,7 @@ class TournamentsController extends Controller
 			$tournaments=Topic::where('type', 'tournament')->where('published', true)->get();
 		}
 
-		return view('content.tournaments',['tournaments'=>$tournaments]);
+		return view('content.tournaments.list',['tournaments'=>$tournaments]);
     }
 
 

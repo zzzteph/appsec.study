@@ -3,8 +3,13 @@
         <div class="hero-body">
             <div class="container has-text-centered">
                 <div class="column is-4 is-offset-4">
-                    <h3 class="title has-text-black">Make security, not obscurity!</h3>
-																		
+				
+				
+			
+						<img class=" is-align-self-center is-rounded" src="{{asset('main.png')}}" >		
+<br/>
+<br/>
+<br/>						
                                 <div class="row">
                                   
 									  <a href="/auth/google/redirect" class="button is-large  is-fullwidth">  <i class="fab fa-google"> </i>&nbsp;with Google</a>

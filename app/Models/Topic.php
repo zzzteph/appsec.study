@@ -171,8 +171,9 @@ class Topic extends Model
 	public function getIsTournamentPlannedAttribute()
 	{
 		if($this->type!=='tournament')return FALSE;
-		if(Carbon::now()->diffInDays($this->start_at)>0 && $this->published==true)
+		if(Carbon::now()->diffInDays($this->start_at,false)>0 && $this->published==true)
 		{
+			
 				return TRUE;
 		}
 		return FALSE;
@@ -182,7 +183,7 @@ class Topic extends Model
 	public function getIsTournamentStartedAttribute()
 	{
 		if($this->type!=='tournament')return FALSE;
-		if(Carbon::now()->diffInDays($this->start_at)<=0 && $this->published==true && Carbon::now()->diffInDays($this->ends_at)>=0)
+		if(Carbon::now()->diffInDays($this->start_at,false)<=0 && $this->published==true && Carbon::now()->diffInDays($this->ends_at,false)>=0)
 		{
 				return TRUE;
 		}
@@ -191,7 +192,7 @@ class Topic extends Model
 		public function getIsTournamentArchivedAttribute()
 	{
 		if($this->type!=='tournament')return FALSE;
-		if(Carbon::now()->diffInDays($this->start_at)<=0 && $this->published==true && Carbon::now()->diffInDays($this->ends_at)<=0)
+		if(Carbon::now()->diffInDays($this->start_at,false)<=0 && $this->published==true && Carbon::now()->diffInDays($this->ends_at,false)<=0)
 		{
 				return TRUE;
 		}

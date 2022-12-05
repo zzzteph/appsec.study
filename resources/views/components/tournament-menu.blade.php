@@ -22,7 +22,7 @@
 		  @endif
 		  @endforeach
 		 <hr class="navbar-divider">
-          <a class="navbar-item" href="{{route('admin-users')}}">
+          <a class="navbar-item" href="{{route('list-archived-tournaments')}}">
             Archived
           </a>
         </div>

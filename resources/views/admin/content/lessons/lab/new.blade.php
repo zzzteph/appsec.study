@@ -1,6 +1,18 @@
 @include('include.header')
 
 	 <section class="section">
+	 
+	 	 <div class="container">
+      <nav class="breadcrumb" aria-label="breadcrumbs">
+         <ul>
+            <li><a href="{{route('admin-view-lessons')}}">Lesson management</a></li>
+            <li class="is-active"><a href="#" >New lab lesson</a></li>
+         </ul>
+      </nav>
+	  <hr/>
+</div>
+	 
+	 
 		 <div class="container">
 
 			<form method="POST" action="{{route('admin-add-new-lab-lesson')}}">
@@ -38,22 +50,6 @@
 </div>
 
 
-
-<div class="field">
-	<label class="label">Type</label>
-  <div class="control">
-
-<div class="select">
-  <select name="type">
-    <option value="attack">attack</option>
-     <option value="defense">defense</option>
-  </select>
-</div>
-
-
-
-  </div>
-</div>
 
 
 <div class="field">

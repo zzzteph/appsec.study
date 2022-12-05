@@ -1,11 +1,13 @@
 @include('include.header')
 <section class="section pt-3">
    <div class="container">
-     
+    
       <nav class="breadcrumb" aria-label="breadcrumbs">
-
+         <ul>
+            <li><a href="{{route('list-tournaments')}}" >Tournaments</a></li>
+			<li class="is-active"><a href="#" >{{$tournament->name}} </a></li>
+         </ul>
       </nav>
-
    </div>
    <hr/>
    <div class="container">
@@ -23,7 +25,7 @@
    
    </div>
    
-
+ @if(!$tournament->is_tournament_archived)
       @if($nodes!=FALSE)
       @foreach ($nodes as $node)
       <a href="{{route('view-tournament-task',['id' => $tournament->id,'node_id'=>$node->id])}}">
@@ -109,7 +111,7 @@
       <br/>
       @endforeach
       @endif
-
+ @endif
 
    
    

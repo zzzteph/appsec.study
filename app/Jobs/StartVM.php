@@ -1,38 +1,28 @@
 <?php
 
-namespace App\Jobs\Google;
+namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Bus;
 use App\Models\UserCloudVm;
+use App\Models\Cloud;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\Google\Start as GoogleStart;
-class Start implements ShouldQueue , ShouldBeUnique
+use App\Jobs\Google\Stop as GoogleStop;
+class StartVM implements ShouldQueue 
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+	public $timeout = 600;
 
-    /**
-     * Create a new job instance.
-     *
-     * @return void
-     */
-	 public $timeout = 600;
-	 
-	 public $uniqueFor = 600;
  
 	protected $uservm;
-    public function uniqueId()
-    {
-        return $this->uservm->id;
-    }
-	 
-	 
+
 	 
     public function __construct(UserCloudVm $uservm)
     {
@@ -48,8 +38,8 @@ class Start implements ShouldQueue , ShouldBeUnique
      */
     public function handle()
     {
-		$cloud=env("CLOUD", FALSE);
-		if($cloud=="google")
+		$cloud=Cloud::first();
+		if($cloud->type=="google")
 		{
 				GoogleStart::dispatch($this->uservm);
 		}

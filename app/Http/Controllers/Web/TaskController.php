@@ -5,26 +5,20 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Course;
 use App\Models\Topic;
 use App\Models\TopicNode;
-use App\Models\UserTopicNode;
 use App\Models\Lesson;
 use App\Models\TheoryLesson;
 use App\Models\LabLesson;
-use App\Models\Vm;
+use App\Models\Cloud;
 use App\Models\LabLessonQuestion;
 use App\Models\UserCloudVm;
-use App\Models\UserToolVm;
 
-
-use App\Rest\Google\Instance\GetInstance;
-use App\Rest\Google\Instance\CreateInstance;
-use App\Rest\Google\Instance\DeleteInstance;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Bus;
 use Carbon\Carbon;
+use App\Jobs\StartVM;
+use App\Jobs\StopVM;
 class TaskController extends Controller
 {
 
@@ -81,16 +75,11 @@ class TaskController extends Controller
 				$userLabVm->user_id=Auth::user()->id;
 				$userLabVm->template_id=$lab_lesson->vm->image;
 				$userLabVm->topic_node_id=$node->id;
-				$userLabVm->vm_id=$lab_lesson->vm->id;
 				$userLabVm->ip="";
 				$userLabVm->instance_id="";
-				$userLabVm->cloud_id=$cloud->id;
 				$userLabVm->progress=0;
 				$userLabVm->save();
-
-				Bus::chain([			new ActionStart($userLabVm,$cloud)		])->onQueue('google')->dispatch($userLabVm,$cloud);
-
-
+				StartVM::dispatch($userLabVm);
 		}
 
 		return redirect()->back();
@@ -133,7 +122,7 @@ class TaskController extends Controller
 		$userLabVm->status="tostop";
 		$userLabVm->progress=100;
 		$userLabVm->save();
-		ActionStop::dispatch($userLabVm)->onQueue('google');
+		StopVM::dispatch($userLabVm);
 		return redirect()->back();
 
 	}

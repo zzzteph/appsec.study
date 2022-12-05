@@ -16,21 +16,6 @@ class UserCloudVm extends Model
         return $this->belongsTo(User::class);
     }
 	
-	
-	protected static function booted()
-    {
-        static::created(function ($entry) {
-			
-			event(new UserStatisticsChange(User::find($entry->user_id)));
-        });
-		
-		static::updated(function ($entry) {
-			if($entry->status=='terminated' || $entry->status=='running')
-			event(new UserStatisticsChange(User::find($entry->user_id)));
-
-
-        });
-    }
 
 	public function node()
     {		

@@ -27,6 +27,7 @@ class Stop implements ShouldQueue
 	 protected $uservm;
     public function __construct(UserCloudVm $uservm)
     {
+		 $this->onQueue('cloud');
          $this->uservm=$uservm;
     }
 
@@ -39,7 +40,7 @@ class Stop implements ShouldQueue
     {
 
 		$cloud=Cloud::first();	
-		$info=new DeleteInstance($this->uservm->instance_id,$cloud->project,Storage::path($cloud->path));
+		$info=new DeleteInstance($this->uservm->instance_id,$cloud->project,$cloud->zone,$cloud->keyfile);
 		$info->execute();
 		
 		$this->uservm->status="stopping";
@@ -47,7 +48,7 @@ class Stop implements ShouldQueue
 		$this->uservm->save();
 		while(true)
 		{
-				$info=new GetInstance($this->uservm->instance_id,$cloud->project,Storage::path($cloud->path));
+				$info=new GetInstance($this->uservm->instance_id,$cloud->project,$cloud->keyfile);
 			$response=$info->execute();	
 			if($this->uservm->progress>0)
 			{

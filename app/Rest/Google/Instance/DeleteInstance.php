@@ -24,11 +24,11 @@ class DeleteInstance
 	private $keypath;
 	private $name;
 	private $zone;
-	public function __construct($name=null,$projectId=null,$keypath=null) {
+	public function __construct($name=null,$projectId=null,$zone,$keypath=null) {
 		$this->projectId=$projectId;
 		$this->keypath=$keypath;
 		$this->name=$name;
-		$this->zone="europe-west1-b";
+		$this->zone=$zone;
     }
 
 	public function execute($retry=3)

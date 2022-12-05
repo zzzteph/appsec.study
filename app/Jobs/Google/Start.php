@@ -1,24 +1,18 @@
 <?php
 
 namespace App\Jobs\Google;
-
-
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Rest\Google\Instance\GetInstance;
 use App\Rest\Google\Instance\CreateInstance;
-use App\Rest\Google\Instance\DeleteInstance;
-
-use App\Models\User;
 use App\Models\UserCloudVm;
 use App\Models\Cloud;
-use App\Models\Vm;
-use App\Models\Iamtoken;
 use Illuminate\Support\Str;
-use App\Models\UserCloudVmLog;
-use App\Jobs\Google\ActionStop;
+use App\Jobs\Timeout;
+use App\Jobs\StopVM;
 use Illuminate\Support\Facades\Storage;
 class Start implements ShouldQueue
 {
@@ -29,11 +23,11 @@ class Start implements ShouldQueue
      *
      * @return void
      */
-	 public $timeout = 6000;
+	 public $timeout = 600;
 	 protected $uservm;
-	 private $response;
     public function __construct(UserCloudVm $uservm)
     {
+		 $this->onQueue('cloud');
          $this->uservm=$uservm;
     }
 
@@ -45,14 +39,14 @@ class Start implements ShouldQueue
      */
     public function handle()
     {
-		
+
 			$name="id-".$this->uservm->id."-user-".$this->uservm->user_id."-".strtolower(Str::random(5));	
 			//public function __construct($instanceName=null$sourceImage=null,$projectId=null$keypath=null) {	
 			$cloud=Cloud::first();		
 			//($instanceName,$sourceImage,$project,$machine,$zone,$network,$keypath)
-			$info=new CreateInstance($name,$this->uservm->template_id,$cloud->project,$cloud->machine,$cloud->zone,$cloud->network,$cloud->keypath);
+			$info=new CreateInstance($name,$this->uservm->template_id,$cloud->project,$cloud->machine,$cloud->zone,$cloud->network,$cloud->keyfile);
 			$response=$info->execute();
-
+			var_dump($response);
 
 			if($response!==FALSE)
 			{
@@ -65,7 +59,7 @@ class Start implements ShouldQueue
 				
 				while(true)
 				{
-					$info=new GetInstance($instanceId,$cloud->project,$cloud->keypath);
+					$info=new GetInstance($instanceId,$cloud->project,$cloud->keyfile);
 					if($info===FALSE)
 					{
 						$this->uservm->progress=100;
@@ -103,7 +97,7 @@ class Start implements ShouldQueue
 				return;
 
 			}
-			ActionStop::dispatch($this->uservm)->onQueue('google');
+			StopVM::dispatch($this->uservm);
 			
 			
 			

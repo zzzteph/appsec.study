@@ -3,11 +3,17 @@
 
 while [ true ]
 do
-  queues=$(ps aux| grep -v grep| grep queue:work | wc -l);
-  if [ "$queues" -lt "4" ]; then
-  
-   php /var/www/artisan queue:work database --queue=google --sleep=3 --tries=3 --timeout=300 > /var/www/queue.log &
+  queues=$(ps aux| grep -v grep| grep queue=cloud | wc -l);
+  if [ "$queues" -lt "2" ]; then
+
+   php artisan queue:work database --queue=cloud > cloud.log&
   fi
-  php /var/www/artisan schedule:run --verbose --no-interaction > /var/www/sghled.log &
+
+    queues=$(ps aux| grep -v grep| grep queue=listeners | wc -l);
+  if [ "$queues" -lt "3" ]; then
+   php artisan queue:work database --queue=listeners > listeners.log &
+  fi
+
+  php artisan schedule:run --verbose --no-interaction &
   sleep 60
 done
