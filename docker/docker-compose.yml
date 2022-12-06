@@ -1,0 +1,42 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: appsec
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: appsec
+    container_name: appsec-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    ports:
+      - 80:80
+    volumes:
+      - storage:/var/www/html/storage
+    networks:
+      - appsec-network
+
+  db:
+    image: mariadb:10.2
+    container_name: appsec-db
+    restart: on-failure
+    environment:
+      MYSQL_DATABASE: appsec
+      MYSQL_ROOT_PASSWORD: appsec
+      MYSQL_PASSWORD: appsec
+      MYSQL_USER: appsec
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - appsec-network
+
+networks:
+  appsec-network:
+    driver: bridge
+volumes:
+  dbdata:
+    driver: local
+  storage:
+    driver: local

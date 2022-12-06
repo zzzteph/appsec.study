@@ -2,8 +2,6 @@
   <img src="https://github.com/zzzteph/appsec.study/blob/main/dev/logo.png?raw=true">
 </p>
 
-# AppsecStudy
-
 
 AppsecStudy is an open-source eLearning management system for information security. 
 

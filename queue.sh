@@ -1,6 +1,3 @@
-
-#!/usr/bin/env bash
-
 while [ true ]
 do
   queues=$(ps aux| grep -v grep| grep queue=cloud | wc -l);
