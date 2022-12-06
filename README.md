@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/zzzteph/appsec.study/blob/main/dev/logo.png?raw=true"  height="350">
+  <img src="https://github.com/zzzteph/appsec.study/blob/main/dev/logo.png?raw=true">
 </p>
 
 # AppsecStudy
