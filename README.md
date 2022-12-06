@@ -14,7 +14,10 @@ AppsecStudy - an open-source platform for seminars, training, and organizing cou
 
 
 
-**The platform is under development, and this section will be supplemented as new information becomes available.**
+# Setup
+
+
+
 
 
 # Contacts
