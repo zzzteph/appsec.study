@@ -133,6 +133,17 @@ php artisan migrate
 ```
 
 
+# Configuration
+
+## OAUTH Google
+
+You need to create OAuth client ID in GCP and setup next values in ```.env``` file.
+
+```
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
+
 
 
 
