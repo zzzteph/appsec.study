@@ -55,9 +55,12 @@ class CloudController extends Controller
 		
 		
 		$cloud=Cloud::first();
+				$cloud->type=$request->input('type');
+		$cloud->save();
 		if($cloud->type=='google')
-			return $this->modify($request,$cloud);
-		
+			return $this->modifyGoogle($request,$cloud);
+		if($cloud->type=='hetzner')
+			return $this->modifyHetzner($request,$cloud);
 	}
 	
 	
@@ -66,24 +69,60 @@ class CloudController extends Controller
 		$request->validate(['type' => 'required']);
 		$cloud=new Cloud;
 		
-		$cloud->type='google';
+		$cloud->type=$request->input('type');
 		$cloud->save();
 		
 		if($cloud->type=='google')
-			return $this->modify($request,$cloud);
+			return $this->modifyGoogle($request,$cloud);
+		if($cloud->type=='hetzner')
+			return $this->modifyHetzner($request,$cloud);
+
+		
 	}
 	
-	private function modify(Request $request, $cloud)
+		private function modifyHetzner(Request $request, $cloud)
 	{
 		
 
-		$request->validate([
-		'project' => 'required|max:255',
-		'machine' => 'required|max:255',
-		'zone' => 'required|max:255',
-		'network' => 'required|max:255',
-		'keyfile' => 'required|file'
-		]);
+
+		CloudConfig::truncate();
+		
+		$config=new CloudConfig;
+		$config->name="api_key";
+		$config->cloud_id=$cloud->id;
+		$config->value=$request->input('api_key');
+		$config->save();
+		
+		
+		$config=new CloudConfig;
+		$config->name="server_type";
+		$config->cloud_id=$cloud->id;
+		$config->value=$request->input('server_type');
+		$config->save();
+		
+		
+		$config=new CloudConfig;
+		$config->name="dc_location";
+		$config->cloud_id=$cloud->id;
+		$config->value=$request->input('dc_location');
+		$config->save();
+		
+
+
+	
+			return back();
+	}
+	
+	
+	
+	
+	
+	
+	private function modifyGoogle(Request $request, $cloud)
+	{
+		
+
+
 		CloudConfig::truncate();
 		
 		$config=new CloudConfig;

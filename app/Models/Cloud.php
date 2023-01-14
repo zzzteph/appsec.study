@@ -30,13 +30,11 @@ class Cloud extends Model
 	}
 	
 	
-	
+	//GOOGLE 	
 	public function getProjectAttribute()
 	{
 		return  $this->get_cloud_config_attribute('project');
 	}
-	
-	
 		public function getMachineAttribute()
 	{
 		return  $this->get_cloud_config_attribute('machine');
@@ -58,7 +56,18 @@ class Cloud extends Model
 	}
 
 	
-	
-	
+	//HETZNER
+	public function getApiKeyAttribute()
+	{
+		return  $this->get_cloud_config_attribute('api_key');
+	}
+	public function getDcLocationAttribute()
+	{
+		return  $this->get_cloud_config_attribute('dc_location');
+	}
+		public function getServerTypeAttribute()
+	{
+		return  $this->get_cloud_config_attribute('server_type');
+	}
 	
 }

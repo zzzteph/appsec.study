@@ -21,7 +21,7 @@
           </a>
 		  @endif
 		  @endforeach
-		 <hr class="navbar-divider">
+		
           <a class="navbar-item" href="{{route('list-archived-tournaments')}}">
             Archived
           </a>

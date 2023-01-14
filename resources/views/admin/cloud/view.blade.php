@@ -29,13 +29,16 @@
 		@isset($cloud)
 			@if($cloud->type=='google')
 			<option value="google" selected>Google</option>
-			@else
+			<option value="hetzner">Hetzner</option>
+			@elseif($cloud->type=='hetzner')
+			<option value="hetzner" selected>Hetzner</option>
 			<option value="google">Google</option>
 			@endif
 		
 		@else
 			<option disabled selected value> -- select an option -- </option>
 			<option value="google">Google</option>
+			<option value="hetzner">Hetzner</option>
 		@endif
 			
         </select>
@@ -157,6 +160,61 @@
 
 
 
+  <template v-if="template === 'hetzner'">
+  
+  @csrf
+
+
+
+<div class="field">
+  <label class="label">API key</label>
+  <div class="control">
+  
+    @isset($cloud)
+<input class="input" type="text" name="api_key" value="{{$cloud->api_key}}">
+@else
+<input class="input" type="text" name="api_key" value="">
+@endif
+  
+  
+	
+  </div>
+</div>
+
+
+<div class="field">
+  <label class="label">Server type</label>
+  <div class="control">
+  
+    @isset($cloud)
+	<input class="input" type="text" name="server_type" value="{{$cloud->server_type}}">
+@else
+<input class="input" type="text" name="server_type" value="">
+@endif
+
+  </div>
+</div>
+
+
+
+
+<div class="field">
+  <label class="label">DC Location</label>
+  <div class="control">
+  
+    @isset($cloud)
+<input class="input" type="text" name="dc_location" value="{{$cloud->dc_location}}">
+@else
+<input class="input" type="text" name="dc_location" value="">
+@endif
+
+  </div>
+</div>
+
+
+
+  
+  </template>
 
 
 
@@ -186,13 +244,15 @@ var app = new Vue({
   el: '#app',
   data: {
 	  @isset($cloud)
-			@if($cloud->type=='google')
-			template:"google"
-			@endif
-		
-		@else
-			template:""
+		@if($cloud->type=='google')
+				template:"google"
 		@endif
+				@if($cloud->type=='hetzner')
+				template:"hetzner"
+		@endif
+	@else
+			template:""
+	@endif
     
   },
   methods: {
