@@ -1,3 +1,4 @@
+@auth
 <div class="navbar-item has-dropdown is-hoverable">
         <a class="navbar-link">
           Tournaments
@@ -27,3 +28,4 @@
           </a>
         </div>
 </div>
+@endauth
