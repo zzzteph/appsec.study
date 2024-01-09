@@ -1,20 +1,60 @@
-version: "3.7"
+version: "1.0"
 services:
-  app:
+  php:
     build:
-      args:
-        user: appsec
-        uid: 1000
       context: ./
       dockerfile: Dockerfile
-    image: appsec
+    image: appsec-app
     container_name: appsec-app
     restart: unless-stopped
     working_dir: /var/www/html
-    ports:
-      - 80:80
     volumes:
-      - storage:/var/www/html/storage
+      - ../:/var/www/html
+    networks:
+      - appsec-network
+    depends_on:
+      - db
+      - nginx
+      - redis
+
+  cron:
+    build:
+      context: ./
+      dockerfile: cron/Dockerfile
+    image: appsec-cron
+    container_name: appsec-cron
+    working_dir: /var/www/html
+    volumes:
+      - ../:/var/www/html
+    networks:
+      - appsec-network
+    depends_on:
+      - php
+
+  supervisor:
+    build:
+      context: ./
+      dockerfile: supervisor/Dockerfile
+    image: appsec-supervisor
+    container_name: appsec-supervisor
+    working_dir: /var/www/html
+    volumes:
+      - ../:/var/www/html
+    networks:
+      - appsec-network
+    depends_on:
+      - cron
+
+
+
+  nginx:
+    image: nginx:alpine
+    container_name: appsec-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../:/var/www/html
+      - ./nginx/appsec.conf:/etc/nginx/conf.d/default.conf
     networks:
       - appsec-network
 
@@ -32,11 +72,18 @@ services:
     networks:
       - appsec-network
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: appsec-redis
+    restart: always
+    networks:
+      - appsec-network
+
 networks:
   appsec-network:
     driver: bridge
 volumes:
   dbdata:
     driver: local
-  storage:
+  redisdata:
     driver: local
