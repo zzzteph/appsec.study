@@ -1,0 +1,11 @@
+{
+    auto_https off
+}
+
+:80 {
+    root * /app
+    try_files {path} {path}/ /index.php
+    php_server
+    file_server
+}
+

@@ -1,0 +1,10 @@
+store.db
+logs/
+uploads/
+__pycache__/
+*.pyc
+.git
+README.md
+frontend/node_modules
+frontend/dist
+static/spa

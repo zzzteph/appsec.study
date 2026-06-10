@@ -1,0 +1,8 @@
+[core]
+	repositoryformatversion = 0
+	bare = false
+[remote "origin"]
+	url = https://ci-bot:glpat-aB3dEfGh1jKlMnOpQrStU@gitlab.com/boxcutter/store.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[user]
+	email = ci@boxcutter.test

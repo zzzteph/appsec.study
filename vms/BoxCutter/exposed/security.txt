@@ -1,0 +1,3 @@
+Contact: mailto:security@boxcutter.test
+Expires: 2026-12-31T23:59:59.000Z
+Policy: https://boxcutter.test/security-policy

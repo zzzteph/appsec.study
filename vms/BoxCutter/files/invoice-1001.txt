@@ -1,0 +1,13 @@
+NIMBUS STORE
+Invoice #1001                         Date: 2024-03-12
+
+Bill to: Alice Walker
+         12 Alder St, Portland, OR
+
+Item                         Qty     Price
+------------------------------------------
+Cumulus Hoodie                 1     $59.00
+------------------------------------------
+                            Total     $59.00
+
+Paid by card ending 4242. Thank you for shopping with Nimbus.
