@@ -6,10 +6,10 @@ Every machine is automatically restarted **every 2 hours** (on even hours, local
 
 ## Machines
 
-| Machine | Difficulty | Focus | Links |
+| Machine | Vulns | Source | Live |
 |---|---|---|---|
-| **BoxCutter** | Mixed (easy → blind) | Full-spectrum web app: injection, XSS, broken access control, API & GraphQL, business logic, info disclosure | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/BoxCutter) · [live](https://boxcutter.appsec.study) |
-| **Stalker** | Beginner–Intermediate | Leaked Git artifacts · hidden admin panel · SQL injection · code execution | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/Stalker) · [live](https://stalker.appsec.study) |
+| **BoxCutter** | Mixed (easy → blind): injection, XSS, broken access control, API & GraphQL, business logic, info disclosure | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/BoxCutter) | [boxcutter.appsec.study](https://boxcutter.appsec.study) |
+| **Stalker** | Leaked Git artifacts · hidden admin panel · SQL injection · code execution | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/Stalker) | [stalker.appsec.study](https://stalker.appsec.study) |
 
 ### BoxCutter
 

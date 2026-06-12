@@ -1,8 +1,21 @@
 title: appsec.study
 description: List of vulnerable machines for testing and training. Nothing more. Nothing less.
+url: https://appsec.study
+lang: en-US
+author: zzzteph
 theme: jekyll-theme-hacker
 
+# Meta tags: jekyll-seo-tag (enabled by default on GitHub Pages, and the Hacker
+# theme renders it in <head>) emits the title, description, Open Graph and
+# Twitter card tags from the fields above. Extra tags it doesn't cover live in
+# _includes/head-custom.html.
+twitter:
+  card: summary
+
+plugins:
+  - jekyll-seo-tag
+
 # Keep the published Pages site to just the landing page — don't publish the
-# challenge sources, nginx configs or scripts through Jekyll.
+# challenge sources through Jekyll.
 exclude:
   - vms/
