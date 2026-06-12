@@ -62,9 +62,18 @@ npm --prefix test/frontend install && npm --prefix test/frontend run build
 pip install flask pyjwt && python test/app.py
 ```
 
-Then point your scanner at `https://localhost:8000` (self-signed cert — pass `-k` or equivalent to skip verification).
+The container's default server is **gunicorn** (worker threads): it stays responsive under
+load — the slow planted endpoints (time-based SQLi, `/api/tools/dns`) no longer block the
+whole site — and serves plain **HTTP**, so terminate TLS and rate-limit in your reverse proxy.
+Tune it with `WEB_WORKERS` / `WEB_THREADS` / `WEB_TIMEOUT`.
 
-To run without HTTPS: `docker run --rm -p 8000:8000 -e HTTPS=0 boxcutter-store`
+For local scanner testing against a self-signed **HTTPS** endpoint, run the single-process dev
+server instead and point your scanner at `https://localhost:8000` (pass `-k` to skip cert
+verification):
+
+```bash
+docker run --rm -p 8000:8000 -e SERVER=dev boxcutter-store
+```
 
 **Accounts:** `user / user` (the demo customer), `alice / alice123`, `admin /
 S3cur3Adm!n`. The JWT signing secret (`boxcutter-super-secret-key-2024`) is leaked

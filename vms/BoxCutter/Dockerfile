@@ -21,4 +21,8 @@ COPY . .
 COPY --from=frontend /fe/dist ./static/spa
 
 EXPOSE 8000
-CMD ["python", "app.py"]
+# Default server is gunicorn (worker threads) so slow planted endpoints can't
+# block the whole site under load; it serves plain HTTP (terminate TLS upstream).
+# Set SERVER=dev to fall back to the single-process Flask dev server + self-signed
+# cert for local scanner testing. See serve.py.
+CMD ["python", "serve.py"]

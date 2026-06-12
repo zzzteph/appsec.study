@@ -15,8 +15,14 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "store.db")
 
 
 def get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    # timeout + WAL + busy_timeout let the threaded workers (gunicorn gthread)
+    # read and write concurrently instead of serialising on one lock and piling
+    # up "database is locked" errors under load.
+    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     # Makes time-based blind SQLi observable. Capped so a scan can't hang us.
     conn.create_function("sleep", 1, lambda n: time.sleep(min(float(n or 0), 8)))
     return conn
