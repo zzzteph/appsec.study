@@ -1,0 +1,8 @@
+title: appsec.study
+description: List of vulnerable machines for testing and training. Nothing more. Nothing less.
+theme: jekyll-theme-hacker
+
+# Keep the published Pages site to just the landing page — don't publish the
+# challenge sources, nginx configs or scripts through Jekyll.
+exclude:
+  - vms/
