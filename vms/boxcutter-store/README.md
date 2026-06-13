@@ -50,30 +50,49 @@ inventory below) — the storefront is the realistic shell; the bugs are the poi
 
 ## Run
 
-```bash
-docker build -t boxcutter-store ./test && docker run --rm -p 8000:8000 boxcutter-store
-```
+### Quick start (Docker)
 
-The Docker build compiles the Vue SPA (node stage) and serves it from Flask.
-To run from source you need Node for the SPA build:
+Pull the published image and run it:
 
 ```bash
-npm --prefix test/frontend install && npm --prefix test/frontend run build
-pip install flask pyjwt && python test/app.py
+docker pull ghcr.io/zzzteph/appsec.study/boxcutter-store:latest
+docker run --rm -p 8000:8000 ghcr.io/zzzteph/appsec.study/boxcutter-store:latest
 ```
 
-The container's default server is **gunicorn** (worker threads): it stays responsive under
-load — the slow planted endpoints (time-based SQLi, `/api/tools/dns`) no longer block the
-whole site — and serves plain **HTTP**, so terminate TLS and rate-limit in your reverse proxy.
-Tune it with `WEB_WORKERS` / `WEB_THREADS` / `WEB_TIMEOUT`.
-
-For local scanner testing against a self-signed **HTTPS** endpoint, run the single-process dev
-server instead and point your scanner at `https://localhost:8000` (pass `-k` to skip cert
-verification):
+Then open **http://localhost:8000/** — use **`http`, not `https`**. The default server is
+gunicorn serving plain **HTTP**; a browser pointed at `https://localhost:8000` will hang on the
+TLS handshake. (Putting it behind a TLS-terminating proxy is up to you.)
 
 ```bash
-docker run --rm -p 8000:8000 -e SERVER=dev boxcutter-store
+curl http://localhost:8000/api/status     # {"service":"boxcutter-store","status":"ok",...}
 ```
+
+> **Build it yourself** instead of pulling — from this directory:
+> `docker build -t ghcr.io/zzzteph/appsec.study/boxcutter-store:latest .`
+> (compiles the Vue account SPA in a node stage, then serves it from Flask).
+
+### HTTPS for local scanner testing
+
+For a self-signed **HTTPS** endpoint (single-process Flask dev server), set `SERVER=dev` and
+point your scanner at `https://localhost:8000` (pass `-k` to skip cert verification):
+
+```bash
+docker run --rm -p 8000:8000 -e SERVER=dev ghcr.io/zzzteph/appsec.study/boxcutter-store:latest
+```
+
+### From source (no Docker)
+
+Node builds the SPA, then Python serves it:
+
+```bash
+npm --prefix frontend install && npm --prefix frontend run build
+pip install -r requirements.txt
+python app.py            # dev server, self-signed HTTPS -> https://localhost:8000
+# or:  HTTPS=0 python app.py   ->  http://localhost:8000
+```
+
+> The production launcher (`serve.py` → gunicorn) is **Linux-only**. On Windows, run
+> `python app.py` directly for local use.
 
 **Accounts:** `user / user` (the demo customer), `alice / alice123`, `admin /
 S3cur3Adm!n`. The JWT signing secret (`boxcutter-super-secret-key-2024`) is leaked
@@ -318,30 +337,3 @@ Good first targets for any scanner or manual session:
 - **Injection**: parameters on `/search`, `/product?id=`, `/api/products?q=`, `/greet?name=`,
   the `/api/lab/*` matrix, and the GraphQL endpoint `/graphql`.
 - **Secrets / JS**: `/static/js/config.js` and `/static/js/app.js` (keys + hidden routes).
-
-## Verifying with boxcutter
-
-Two layers of verification:
-
-- **`python checks.py`** — exploits **every** planted bug directly (ground truth, ~100 checks). Use this to prove a finding is real.
-- **boxcutter** — confirms the subset an automated scanner can reach, grouped below. (If boxcutter runs in a container and the app on your host, use `http://host.docker.internal:8000`.)
-
-```bash
-# one token for the auth-gated groups
-TOKEN=$(curl -s -X POST http://localhost:8000/api/login \
-  -H 'Content-Type: application/json' -d '{"username":"user","password":"user"}' \
-  | python -c "import sys,json;print(json.load(sys.stdin)['token'])")
-```
-
-| Finding group | boxcutter command | Confirms |
-|---|---|---|
-| **Everything (one shot)** | `boxcutter workflow web-scan http://localhost:8000 --header "Authorization: Bearer $TOKEN"` | crawl + spec + JS routes + param DAST + exposures |
-| **Exposures / info-disclosure** | `boxcutter nuclei http://localhost:8000 --opt-args "-tags exposures,misconfig,springboot"` and `boxcutter dirsearch http://localhost:8000` | `.env`, `.git/config`, actuators, heapdump, `backup.sql`, phpinfo |
-| **Secrets in JS** | `boxcutter scan-secrets http://localhost:8000/static/js/config.js` | AWS / Stripe / JWT keys |
-| **API discovery** | `boxcutter swagger-specs localhost:8000` | finds `/api/openapi.json` |
-| **API injection (authed)** | `boxcutter workflow swagger-fuzz http://localhost:8000/api/openapi.json --header "Authorization: Bearer $TOKEN"` | SQLi / SSTI / cmd / reflection on documented endpoints |
-| **Storefront injection** | `boxcutter fuzz "http://localhost:8000/search?q=1"` and `boxcutter fuzz "http://localhost:8000/product?id=1"` | reflected XSS, SQLi (error/blind/time) |
-| **Hidden XHR routes** | `boxcutter js-endpoints http://localhost:8000/static/js/app.js` (absolute URLs) → `boxcutter fuzz` each `?param` route | hidden SQLi / SSRF / error-disclosure |
-| **ZAP active scan (authed)** | `boxcutter zap-scan-openapi http://localhost:8000/api/openapi.json --header "Authorization: Bearer $TOKEN"` | ZAP's view of the API (note: rates some SQLi `High (Low)` → raise confidence to see it) |
-
-**Not auto-verifiable by the scanner — use `checks.py`:** access-control / IDOR / BFLA / tenant-isolation, business logic (price, coupon, payment-confirmation replay, fee-omit), client-side / DOM XSS, GraphQL (introspection / secret field / `setRole` / CMS), and the JWT-`kid`/`alg:none` forgeries. These need an auth oracle, a JS engine, or a known request — outside single-pass DAST.
