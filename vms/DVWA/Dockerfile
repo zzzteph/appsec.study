@@ -37,8 +37,15 @@ RUN curl -fsSL -o /tmp/dvwa.zip \
 
 RUN cp /var/www/html/config/config.inc.php.dist /var/www/html/config/config.inc.php \
  && sed -i "s#getenv('DISABLE_AUTHENTICATION') ?: false;#true;#" /var/www/html/config/config.inc.php \
+ && sed -i "/'url' => 'setup.php'/d" /var/www/html/dvwa/includes/dvwaPage.inc.php \
  && chown -R www-data:www-data /var/www/html \
  && chmod -R 0777 /var/www/html/hackable/uploads
+
+COPY <<'EOF' /etc/apache2/conf-enabled/dvwa-lockdown.conf
+<Files "setup.php">
+    Require ip 127.0.0.1 ::1
+</Files>
+EOF
 
 COPY <<'EOF' /usr/local/bin/dvwa-entrypoint.sh
 #!/bin/bash
