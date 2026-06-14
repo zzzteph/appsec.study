@@ -1,5 +1,5 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+# Build the Jekyll landing page and deploy it to GitHub Pages.
+name: Deploy site to Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -22,22 +22,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v5
+        with:
+          # Enable Pages (build type "GitHub Actions") on the first run so the
+          # workflow stops failing with "Get Pages site failed / Not Found".
+          enablement: true
+      # Render the Jekyll site (theme + jekyll-seo-tag + _config.yml + head-custom)
+      # into ./_site. Uploading the raw repo would skip this and ship unrendered
+      # source instead of the themed landing page.
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: '.'
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v4

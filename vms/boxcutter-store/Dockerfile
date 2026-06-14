@@ -19,6 +19,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 COPY --from=frontend /fe/dist ./static/spa
+# Swagger UI assets are vendored in static/swagger (copied above) so /api/docs
+# renders with no CDN and the build needs no network.
 
 EXPOSE 8000
 # Default server is gunicorn (worker threads) so slow planted endpoints can't

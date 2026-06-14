@@ -19,6 +19,7 @@ import pickle
 import re
 import sqlite3
 import subprocess
+import time
 import traceback
 import unicodedata
 from datetime import datetime, timedelta, timezone
@@ -665,6 +666,50 @@ def api_jwt_test():
     return jsonify({"token": _issue_token("guest", "user"), "note": "ephemeral test token"})
 
 
+@app.route("/api/auth-test")
+def api_auth_test():
+    # VULN[debug-auth-test]: leftover debug helper that mints a VALID token for any
+    # account with no authentication - defaults to the admin. Anyone who finds it
+    # gets instant admin access (and the account's password is returned too).
+    username = request.args.get("user", "admin")
+    conn = get_conn()
+    row = conn.execute("SELECT username, role, password FROM users WHERE username = ?",
+                       (username,)).fetchone()
+    conn.close()
+    if row:
+        username, role, password = row["username"], row["role"], row["password"]
+    else:
+        role, password = "admin", None
+    token = _issue_token(username, role or "admin")
+    return jsonify({"username": username, "role": role or "admin", "password": password,
+                    "token": token, "authorization": f"Bearer {token}"})
+
+
+# In-memory referral ledger (module-level) backing the race-condition demo.
+_REFERRAL_REDEEMED = set()
+_REFERRAL_CREDIT = {}
+
+
+@app.route("/api/referrals/redeem", methods=["POST"])
+def api_referral_redeem():
+    # VULN[referral-race]: classic check-then-act on shared state with no lock.
+    # Under the threaded server many concurrent POSTs all pass the "already
+    # redeemed" check before any of them records the redemption, so the 5.00
+    # credit is granted multiple times for one account (coupon/referral
+    # double-spend). The small sleep widens the TOCTOU window.
+    data = request.get_json(silent=True) or {}
+    user = data.get("user") or request.args.get("user", "guest")
+    code = data.get("code") or request.args.get("code", "")
+    if not code:
+        return jsonify({"error": "missing referral code"}), 400
+    if user in _REFERRAL_REDEEMED:
+        return jsonify({"error": "already redeemed"}), 409
+    time.sleep(0.05)
+    _REFERRAL_REDEEMED.add(user)
+    _REFERRAL_CREDIT[user] = _REFERRAL_CREDIT.get(user, 0.0) + 5.0
+    return jsonify({"user": user, "credited": 5.0, "balance": _REFERRAL_CREDIT[user]})
+
+
 @app.route("/api/me")
 def api_me():
     claims, err = _require_jwt()
@@ -847,8 +892,8 @@ def api_docs():
     # (Recurring JET finding: Swagger-UI ?url=/?configUrl= XSS.)
     spec = request.args.get("configUrl") or request.args.get("url") or "/api/openapi.json"
     return page("API docs", f"""<div id="swagger"></div>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-      <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+      <link rel="stylesheet" href="/static/swagger/swagger-ui.css">
+      <script src="/static/swagger/swagger-ui-bundle.js"></script>
       <script>SwaggerUIBundle({{url:'{spec}',dom_id:'#swagger'}});</script>""")
 
 
@@ -2405,6 +2450,20 @@ OPENAPI = {
         "/api/status": {"get": {"tags": ["public"], "summary": "Service status",
             "description": "Lightweight status/health for the storefront API.",
             "responses": {"200": _ok("Status.", {"type": "object"})}}},
+        "/api/auth-test": {"get": {"tags": ["JWTTest"], "summary": "Mint admin credentials (debug)",
+            "description": "Debug helper that returns a valid bearer token (and password) for an "
+                           "account - the admin by default, or `?user=<username>`. Leftover from testing.",
+            "parameters": [{"name": "user", "in": "query", "required": False,
+                            "description": "username to mint a token for (default: admin)",
+                            "schema": {"type": "string"}, "example": "admin"}],
+            "responses": {"200": _ok("Credentials and a bearer token.", _S("Token"))}}},
+        "/api/referrals/redeem": {"post": {"tags": ["store"], "summary": "Redeem a referral code",
+            "description": "Credit the account's wallet once for a referral code.",
+            "requestBody": {**_json({"type": "object", "properties": {
+                "user": {"type": "string", "example": "alice"},
+                "code": {"type": "string", "example": "FRIEND5"}}})},
+            "responses": {"200": _ok("Credit applied.", {"type": "object"}),
+                          "409": {"description": "Already redeemed.", **_json(_S("Error"))}}}},
     },
 }
 
