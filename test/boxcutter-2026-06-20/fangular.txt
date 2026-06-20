@@ -1,0 +1,6 @@
+source         severity  title                                         info                                                                    url                          
+-------------  --------  --------------------------------------------  ----------------------------------------------------------------------  -----------------------------
+zap-scan-full  medium    Content Security Policy (CSP) Header Not Set  Content Security Policy (CSP) Header Not Set via  <p>Content Securi...  https://fangular.appsec.study
+zap-scan-full  medium    Missing Anti-clickjacking Header              Missing Anti-clickjacking Header via x-frame-options <p>The respons...  https://fangular.appsec.study
+nuclei         low       weak-cipher-suites:tls-1.0                    [weak-cipher-suites:tls-1.0] [ssl] [low] fangular.appsec.study:443 ...  fangular.appsec.study:443    
+nuclei         low       weak-cipher-suites:tls-1.1                    [weak-cipher-suites:tls-1.1] [ssl] [low] fangular.appsec.study:443 ...  fangular.appsec.study:443    

@@ -16,5 +16,18 @@ Every machine is automatically restarted **every 2 hours** (on even hours, local
 | **frontend-str-angular** | Angular-specific client-side bugs: `bypassSecurityTrust*` (HTML/URL/ResourceUrl), open redirect, JIT CSTI | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/frontend-str-angular) | [fangular.appsec.study](https://fangular.appsec.study) |
 | **nomnom** | Food-ordering REST API (~117 endpoints, Swagger UI): BOLA/IDOR, BFLA, mass assignment, price tampering, referral race condition, SSRF, SQLi, JWT (alg:none/weak secret), XXE, SSTI, file upload, open redirect, CORS, GraphQL | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/nomnom) | [nomnom.appsec.study](https://nomnom.appsec.study) |
 
+## Scanner coverage
+
+Planted vulnerabilities each scanner discovered (valid findings / total embedded). A new column is added per scan.
+
+| Machine | boxcutter `web-full` |
+|---|---|
+| Boxcutter Store | 19 / 109 |
+| DVWA | 9 / 14 |
+| nomnom | 5 / 42 |
+| Stalker | 1 / 4 |
+| frontend-str-react | 0 / 5 |
+| frontend-str-vue | 0 / 5 |
+| frontend-str-angular | 0 / 5 |
 
 
