@@ -20,7 +20,7 @@ Every machine is automatically restarted **every 2 hours** (on even hours, local
 
 Planted vulnerabilities each scanner discovered (valid findings / total embedded). A new column is added per scan.
 
-| Machine | boxcutter `web-full` |
+| Machine | boxcutter `web-full` (unauthed) |
 |---|---|
 | Boxcutter Store | 19 / 109 |
 | DVWA | 9 / 14 |
