@@ -5,6 +5,7 @@ RUN apt-get update \
 WORKDIR /app
 RUN rm -rf public
 COPY ./sources /app
+RUN mv /app/admin/panel/.git.tmp /app/admin/panel/.git
 COPY Caddyfile /etc/frankenphp/Caddyfile
 
 EXPOSE 80
