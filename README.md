@@ -15,6 +15,7 @@ Every machine is automatically restarted **every 2 hours** (on even hours, local
 | **frontend-str-vue** | Vue-specific client-side bugs: `v-html`, `:href` `javascript:`, runtime-compiler CSTI, `<component :is>` | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/frontend-str-vue) | [fvue.appsec.study](https://fvue.appsec.study) |
 | **frontend-str-angular** | Angular-specific client-side bugs: `bypassSecurityTrust*` (HTML/URL/ResourceUrl), open redirect, JIT CSTI | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/frontend-str-angular) | [fangular.appsec.study](https://fangular.appsec.study) |
 | **nomnom** | Food-ordering REST API (~117 endpoints, Swagger UI): BOLA/IDOR, BFLA, mass assignment, price tampering, referral race condition, SSRF, SQLi, JWT (alg:none/weak secret), XXE, SSTI, file upload, open redirect, CORS, GraphQL | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/nomnom) | [nomnom.appsec.study](https://nomnom.appsec.study) |
+| **juicy** | JS-analysis SPA: secrets & assembled/prefixed endpoints buried in bundles at varied obfuscation (minified, webpack, hex, base64, source-map leak) + 8 DOM-XSS sinks behind hidden params | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/juicy) | [juicy.appsec.study](https://juicy.appsec.study) |
 
 ## Scanner coverage
 
@@ -29,5 +30,6 @@ Planted vulnerabilities each scanner discovered (valid findings / total embedded
 | frontend-str-react | 0 / 5 |
 | frontend-str-vue | 0 / 5 |
 | frontend-str-angular | 0 / 5 |
+| juicy | — |
 
 

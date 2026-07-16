@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Juicy — fresh cold-pressed juice</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@juicy/utils": "/js/vendor/utils.mjs",
+          "@juicy/track": "https://cdn.juicy.example/track.mjs"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <span class="brand">🧃 Juicy</span>
+      <input id="q" placeholder="Search juices…" />
+    </header>
+
+    <main>
+      <section id="view">Loading the menu…</section>
+      <aside>
+        <div id="widget"></div>
+        <a id="back" href="/">← keep shopping</a>
+      </aside>
+    </main>
+
+    <footer>© Juicy Juice Bar</footer>
+
+    <script src="/js/config.min.js"></script>
+    <script src="/js/runtime-env.js"></script>
+    <script src="/js/sdk.js"></script>
+    <script src="/js/vendor.obf.js"></script>
+    <script src="/js/main.bundle.js"></script>
+    <script src="/js/chunk.4f2a.min.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/graphql.js"></script>
+    <script src="/js/features.js"></script>
+    <script src="/js/loader.js"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/gate.js"></script>
+    <script src="/js/debugtoggle.js"></script>
+    <script src="/js/render.js"></script>
+    <script src="/js/widget.js"></script>
+    <script src="/js/track.js"></script>
+    <script src="/js/debug.js"></script>
+    <script src="/js/legacy.js"></script>
+    <script src="/js/router.js"></script>
+    <script src="/js/deeplink.js"></script>
+    <script src="/js/messagebus.js"></script>
+    <script type="module">import { boot } from '@juicy/utils'; boot();</script>
+    <script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"apiBase":"/gw/7f3a9c/api/v2","adminApi":"/_int/8b21/internal","session":{"role":"guest"},"config":{"internalToken":"int_live_JuicyBar_7d21c9","supportEmail":"ops@juicy.example"}}},"page":"/","query":{},"buildId":"jB-7f3a9c-2024","runtimeConfig":{"gql":"/gw/7f3a9c/graphql"}}</script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, sans-serif; color: #23202b; background: #fff7ef; }
+header { display: flex; gap: 1rem; align-items: center; padding: 0.9rem 1.25rem; background: #ff8a3d; color: #3a1d00; }
+header .brand { font-weight: 800; font-size: 1.2rem; margin-right: auto; }
+#q { padding: 0.5rem 0.75rem; border: 0; border-radius: 999px; min-width: 220px; }
+main { display: grid; grid-template-columns: 1fr 260px; gap: 1.5rem; max-width: 960px; margin: 1.5rem auto; padding: 0 1.25rem; }
+aside { border-left: 1px solid #f0d9c2; padding-left: 1rem; }
+.card { background: #fff; border: 1px solid #f0d9c2; border-radius: 12px; padding: 0.9rem; margin: 0.6rem 0; box-shadow: 0 1px 0 #f3e6d6; }
+.price { color: #d2691e; font-weight: 700; }
+footer { text-align: center; color: #9a8b7a; padding: 2rem; font-size: 0.9rem; }
+a { color: #d2691e; }
