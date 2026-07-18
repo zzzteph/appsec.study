@@ -1,0 +1,5 @@
+GraphShop — Invoice #1001
+Customer: alice
+Item: Bluetooth Speaker x1
+Total: $12.75
+Paid with card ending 4242

@@ -1,4 +1,0 @@
-source         severity  title                                         info                                                                    url                      
--------------  --------  --------------------------------------------  ----------------------------------------------------------------------  -------------------------
-zap-scan-full  medium    Content Security Policy (CSP) Header Not Set  Content Security Policy (CSP) Header Not Set via  <p>Content Securi...  https://fvue.appsec.study
-zap-scan-full  medium    Missing Anti-clickjacking Header              Missing Anti-clickjacking Header via x-frame-options <p>The respons...  https://fvue.appsec.study

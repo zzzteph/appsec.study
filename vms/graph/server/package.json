@@ -1,0 +1,14 @@
+{
+  "name": "graph-server",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "@apollo/server": "^4.11.2",
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "graphql": "^16.9.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
