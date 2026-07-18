@@ -30,6 +30,15 @@ const co = reactive({ number: '4242424242424242', exp: '12/29', cvc: '123', gift
 const rev = reactive({ rating: 5, text: '' })
 const art = reactive({ slug: '', question: '', answer: '' })
 const prof = reactive({ username: '', address: '', password: '' })
+const gift = reactive({ amount: 20, code: '' })
+const xfer = reactive({ toUserId: '', amount: 5 })
+const emailForm = reactive({ email: '', userId: '' })
+const coupons = ref('')
+const favorites = ref([])
+const noteText = ref('')
+const notesByOrder = reactive({})
+const invoiceOut = ref('')
+const tools = reactive({ loginAsId: '', webhookUrl: 'http://127.0.0.1:80/graphql', upName: 'pwn.html', upContent: '<img src=x onerror=alert(1)>', shopId: 's1', itemName: 'Hacked Item', itemPrice: 0.01, updItemId: '', updItemPrice: '', updShopId: 's1', updShopName: '' })
 
 async function loadShops() { shops.value = (await gql('{ shops { id name description } }')).shops }
 async function loadShop(id) {
@@ -60,8 +69,9 @@ async function addToCart(item) {
 }
 async function doCheckout() {
   try {
-    const d = await gql('mutation($c:CardInput!,$g:String,$t:Float){ checkout(card:$c, giftCardCode:$g, total:$t){ id total status } }',
-      { c: { number: co.number, exp: co.exp, cvc: co.cvc }, g: co.giftCardCode || null, t: co.total === '' ? null : Number(co.total) })
+    const cps = coupons.value.split(',').map((s) => s.trim()).filter(Boolean)
+    const d = await gql('mutation($c:CardInput!,$g:String,$t:Float,$cp:[String!]){ checkout(card:$c, giftCardCode:$g, total:$t, coupons:$cp){ id total status } }',
+      { c: { number: co.number, exp: co.exp, cvc: co.cvc }, g: co.giftCardCode || null, t: co.total === '' ? null : Number(co.total), cp: cps.length ? cps : null })
     flash('Order ' + d.checkout.id + ' placed'); nav('#/orders')
   } catch (e) { flash(e.message) }
 }
@@ -111,6 +121,25 @@ async function doInvite() {
   try { const d = await gql('mutation($u:String!){ invite(username:$u) }', { u: inviteUser.value }); flash(d.invite) }
   catch (e) { flash(e.message) }
 }
+const card = () => ({ number: co.number, exp: co.exp, cvc: co.cvc })
+async function buyGiftCard() { try { const d = await gql('mutation($a:Float!,$c:CardInput!){ buyGiftCard(amount:$a, card:$c){ code balance } }', { a: Number(gift.amount), c: card() }); gift.code = d.buyGiftCard.code; flash('Gift card: ' + d.buyGiftCard.code) } catch (e) { flash(e.message) } }
+async function redeemGiftCard() { try { await gql('mutation($c:String!){ redeemGiftCard(code:$c){ code balance } }', { c: gift.code }); await loadMe(); flash('Redeemed') } catch (e) { flash(e.message) } }
+async function doTransfer() { try { await gql('mutation($t:ID!,$a:Float!){ transferCredits(toUserId:$t, amount:$a){ id credits } }', { t: xfer.toUserId, a: Number(xfer.amount) }); await loadMe(); flash('Transferred') } catch (e) { flash(e.message) } }
+async function doChangeEmail() { try { await gql('mutation($e:String!,$u:ID){ changeEmail(email:$e, userId:$u){ id email } }', { e: emailForm.email, u: emailForm.userId || null }); flash('Email changed') } catch (e) { flash(e.message) } }
+async function doBecomeSeller() { try { await gql('mutation{ becomeSeller{ id role } }'); await loadMe(); flash('You are now a seller') } catch (e) { flash(e.message) } }
+async function addFav(item) { try { await gql('mutation($i:ID!){ addFavorite(itemId:$i){ id } }', { i: item.id }); flash('Favorited') } catch (e) { flash(e.message) } }
+async function loadFav() { if (me.value) favorites.value = (await gql('query($u:ID!){ favorites(userId:$u){ id name price } }', { u: me.value.id })).favorites }
+async function doRefund(o) { try { const d = await gql('mutation($o:ID!){ refundOrder(orderId:$o) }', { o: o.id }); await loadOrders(); flash('Refunded $' + d.refundOrder) } catch (e) { flash(e.message) } }
+async function doCancel(o) { try { await gql('mutation($o:ID!){ cancelOrder(orderId:$o){ id status } }', { o: o.id }); await loadOrders(); flash('Cancelled') } catch (e) { flash(e.message) } }
+async function loadNotes(o) { notesByOrder[o.id] = (await gql('query($o:ID!){ orderNotes(orderId:$o){ id author text } }', { o: o.id })).orderNotes }
+async function addNote(o) { try { await gql('mutation($o:ID!,$t:String!){ addOrderNote(orderId:$o, text:$t){ id } }', { o: o.id, t: noteText.value }); noteText.value = ''; await loadNotes(o); flash('Note added') } catch (e) { flash(e.message) } }
+async function getInvoice(o, file) { try { const d = await gql('query($o:ID!,$f:String){ invoice(orderId:$o, file:$f) }', { o: o.id, f: file || null }); invoiceOut.value = d.invoice } catch (e) { flash(e.message) } }
+async function doLoginAs() { try { const d = await gql('mutation($u:ID!){ loginAs(userId:$u){ accessToken refreshToken user{ username role } } }', { u: tools.loginAsId }); saveAuth(d.loginAs); authed.value = true; await loadMe(); flash('Now acting as ' + d.loginAs.user.username) } catch (e) { flash(e.message) } }
+async function doWebhook() { try { const d = await gql('mutation($u:String!){ registerWebhook(url:$u) }', { u: tools.webhookUrl }); flash(String(d.registerWebhook).slice(0, 140)) } catch (e) { flash(e.message) } }
+async function doUpload() { try { const d = await gql('mutation($f:String!,$c:String!){ uploadAsset(filename:$f, contentBase64:$c) }', { f: tools.upName, c: btoa(tools.upContent) }); flash('Uploaded: ' + d.uploadAsset) } catch (e) { flash(e.message) } }
+async function doCreateItem() { try { await gql('mutation($s:ID!,$n:String!,$p:Float!){ createItem(shopId:$s, name:$n, price:$p){ id } }', { s: tools.shopId, n: tools.itemName, p: Number(tools.itemPrice) }); flash('Item created') } catch (e) { flash(e.message) } }
+async function doUpdateItem() { try { await gql('mutation($i:ID!,$p:Float){ updateItem(id:$i, price:$p){ id price } }', { i: tools.updItemId, p: tools.updItemPrice === '' ? null : Number(tools.updItemPrice) }); flash('Item updated') } catch (e) { flash(e.message) } }
+async function doUpdateShop() { try { await gql('mutation($i:ID!,$n:String){ updateShop(id:$i, name:$n){ id name } }', { i: tools.updShopId, n: tools.updShopName || null }); flash('Shop updated') } catch (e) { flash(e.message) } }
 function toggleOpt(itemId, optId, ev) {
   selected[itemId] = selected[itemId] || []
   if (ev.target.checked) selected[itemId].push(optId)
@@ -128,9 +157,10 @@ watch(route, async () => {
     else if (p === '/cart') await loadCart()
     else if (p === '/orders') { await loadOrders() }
     else if (p === '/help') await loadArticles()
-    else if (p === '/profile') { await loadMe() }
+    else if (p === '/profile') { await loadMe(); await loadFav() }
     else if (p === '/invites') { await loadMe(); await loadInvites() }
     else if (p === '/admin') await loadRecent()
+    else if (p === '/tools') await loadMe()
   } catch (e) { flash(e.message) }
   if (poll) { clearInterval(poll); poll = null }
   if (p === '/orders') poll = setInterval(loadOrders, 5000)
@@ -149,6 +179,7 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
       <template v-if="authed">
         <a href="#/orders">Orders</a>
         <a href="#/invites">Invites</a>
+        <a href="#/tools">Tools</a>
         <a href="#/profile">Profile</a>
         <a href="#" @click.prevent="doLogout">Logout</a>
       </template>
@@ -183,7 +214,7 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
             <input type="checkbox" @change="toggleOpt(it.id, o.id, $event)" />
             {{ o.group }}: {{ o.name }} ({{ o.priceDelta >= 0 ? '+' : '' }}{{ o.priceDelta }})
           </label>
-          <div><button @click="addToCart(it)">Add to cart</button></div>
+          <div><button @click="addToCart(it)">Add to cart</button> <button @click="addFav(it)">♥ Favorite</button></div>
         </div>
         <div class="row">
           <button @click="changePage(-1)" :disabled="shop.items.page <= 1">Prev</button>
@@ -218,6 +249,7 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
             <input v-model="co.exp" placeholder="MM/YY" />
             <input v-model="co.cvc" placeholder="CVC" />
             <input v-model="co.giftCardCode" placeholder="Gift card code (optional)" />
+            <input v-model="coupons" placeholder="coupons, comma-separated (e.g. HALF,HALF)" />
             <button @click="doCheckout">Pay ${{ cart.total.toFixed(2) }}</button>
           </div>
           <p v-else class="muted">Please <a href="#/login">log in</a> to check out.</p>
@@ -231,7 +263,19 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
         <div v-for="o in orders" :key="o.id" class="card">
           <b>#{{ o.id }}</b> — ${{ o.total.toFixed(2) }} · <span :class="'st st-' + o.status">{{ o.status }}</span>
           <div class="muted">track: {{ o.trackingCode }} · card •••• {{ o.cardLast4 }}</div>
+          <div class="row">
+            <button @click="doRefund(o)">Refund</button>
+            <button @click="doCancel(o)">Cancel</button>
+            <button @click="loadNotes(o)">Notes</button>
+            <button @click="getInvoice(o)">Invoice</button>
+          </div>
+          <div v-if="notesByOrder[o.id]">
+            <div v-for="n in notesByOrder[o.id]" :key="n.id" class="muted">📝 {{ n.author }}: {{ n.text }}</div>
+            <input v-model="noteText" placeholder="add a note" />
+            <button @click="addNote(o)">Add note</button>
+          </div>
         </div>
+        <pre v-if="invoiceOut" class="card">{{ invoiceOut }}</pre>
         <p v-if="!orders.length" class="muted">No orders yet.</p>
       </section>
 
@@ -284,6 +328,67 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
           <input v-model="prof.address" placeholder="delivery address" />
           <input v-model="prof.password" type="password" placeholder="new password (optional)" />
           <button @click="saveProfile">Save</button>
+        </div>
+        <div class="card">
+          <h3>Gift cards</h3>
+          <input v-model.number="gift.amount" type="number" placeholder="amount" />
+          <button @click="buyGiftCard">Buy</button>
+          <input v-model="gift.code" placeholder="gift card code" />
+          <button @click="redeemGiftCard">Redeem</button>
+        </div>
+        <div class="card">
+          <h3>Transfer credits</h3>
+          <input v-model="xfer.toUserId" placeholder="recipient user id" />
+          <input v-model.number="xfer.amount" type="number" placeholder="amount (negative to steal)" />
+          <button @click="doTransfer">Transfer</button>
+        </div>
+        <div class="card">
+          <h3>Change email · Become seller</h3>
+          <input v-model="emailForm.email" placeholder="new email" />
+          <input v-model="emailForm.userId" placeholder="target user id (optional — BOLA)" />
+          <button @click="doChangeEmail">Change email</button>
+          <button @click="doBecomeSeller">Become seller</button>
+        </div>
+        <div class="card">
+          <h3>Favorites</h3>
+          <div v-for="f in favorites" :key="f.id" class="muted">♥ {{ f.name }} — ${{ f.price.toFixed(2) }}</div>
+          <p v-if="!favorites.length" class="muted">No favorites yet.</p>
+        </div>
+      </section>
+
+      <!-- Tools -->
+      <section v-else-if="path === '/tools'">
+        <h1>Tools</h1>
+        <div class="card">
+          <h3>Login as (impersonate)</h3>
+          <input v-model="tools.loginAsId" placeholder="user id" />
+          <button @click="doLoginAs">Login as</button>
+        </div>
+        <div class="card">
+          <h3>Register webhook (server fetches URL)</h3>
+          <input v-model="tools.webhookUrl" placeholder="http://…" />
+          <button @click="doWebhook">Register</button>
+        </div>
+        <div class="card">
+          <h3>Upload asset</h3>
+          <input v-model="tools.upName" placeholder="filename" />
+          <textarea v-model="tools.upContent" placeholder="file content"></textarea>
+          <button @click="doUpload">Upload</button>
+        </div>
+        <div class="card">
+          <h3>Seller: items &amp; shops</h3>
+          <input v-model="tools.shopId" placeholder="shopId" />
+          <input v-model="tools.itemName" placeholder="new item name" />
+          <input v-model.number="tools.itemPrice" type="number" placeholder="price" />
+          <button @click="doCreateItem">Create item</button>
+          <hr />
+          <input v-model="tools.updItemId" placeholder="item id" />
+          <input v-model="tools.updItemPrice" placeholder="new price (can be negative)" />
+          <button @click="doUpdateItem">Update item</button>
+          <hr />
+          <input v-model="tools.updShopId" placeholder="shop id" />
+          <input v-model="tools.updShopName" placeholder="new shop name" />
+          <button @click="doUpdateShop">Update shop</button>
         </div>
       </section>
 

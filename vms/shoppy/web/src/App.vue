@@ -21,6 +21,15 @@ const rev = reactive({ rating: 5, text: '' })
 const art = reactive({ slug: '', question: '', answer: '' })
 const prof = reactive({ username: '', address: '', password: '' })
 const inviteUser = ref('')
+const gift = reactive({ amount: 20, code: '' })
+const xfer = reactive({ toUserId: '', amount: 5 })
+const emailForm = reactive({ email: '', userId: '' })
+const coupons = ref('')
+const favorites = ref([])
+const noteText = ref('')
+const notesByOrder = reactive({})
+const invoiceOut = ref('')
+const tools = reactive({ loginAsId: '', webhookUrl: 'http://127.0.0.1:80/api/shops', upName: 'pwn.html', upContent: '<img src=x onerror=alert(1)>', shopId: 's1', itemName: 'Hacked Item', itemPrice: 0.01, updItemId: '', updItemPrice: '', updShopId: 's1', updShopName: '' })
 
 async function loadShops() { shops.value = await get('/shops') }
 async function loadShop(id) {
@@ -44,7 +53,8 @@ async function addToCart(item) {
 }
 async function doCheckout() {
   try {
-    const o = await post('/checkout', { card: { number: co.number, exp: co.exp, cvc: co.cvc }, giftCardCode: co.giftCardCode || null, total: co.total === '' ? null : Number(co.total) })
+    const cps = coupons.value.split(',').map((s) => s.trim()).filter(Boolean)
+    const o = await post('/checkout', { card: { number: co.number, exp: co.exp, cvc: co.cvc }, giftCardCode: co.giftCardCode || null, total: co.total === '' ? null : Number(co.total), coupons: cps.length ? cps : null })
     flash('Order ' + o.id + ' placed'); nav('#/orders')
   } catch (e) { flash(e.message) }
 }
@@ -71,6 +81,25 @@ async function saveProfile() {
   catch (e) { flash(e.message) }
 }
 async function doInvite() { try { await post('/invite', { username: inviteUser.value }); flash('invited ' + inviteUser.value) } catch (e) { flash(e.message) } }
+const card = () => ({ number: co.number, exp: co.exp, cvc: co.cvc })
+async function buyGiftCard() { try { const d = await post('/giftcards', { amount: Number(gift.amount), card: card() }); gift.code = d.code; flash('Gift card: ' + d.code) } catch (e) { flash(e.message) } }
+async function redeemGiftCard() { try { await post('/giftcards/' + encodeURIComponent(gift.code) + '/redeem'); await loadMe(); flash('Redeemed') } catch (e) { flash(e.message) } }
+async function doTransfer() { try { await post('/credits/transfer', { toUserId: xfer.toUserId, amount: Number(xfer.amount) }); await loadMe(); flash('Transferred') } catch (e) { flash(e.message) } }
+async function doChangeEmail() { try { const uid = emailForm.userId || (me.value && me.value.id); await post('/users/' + uid + '/email', { email: emailForm.email }); flash('Email changed') } catch (e) { flash(e.message) } }
+async function doBecomeSeller() { try { await post('/seller'); await loadMe(); flash('You are now a seller') } catch (e) { flash(e.message) } }
+async function addFav(item) { try { await post('/favorites', { itemId: item.id }); flash('Favorited') } catch (e) { flash(e.message) } }
+async function loadFav() { if (me.value) favorites.value = await get('/users/' + me.value.id + '/favorites') }
+async function doRefund(o) { try { const d = await post('/orders/' + o.id + '/refund', {}); await loadOrders(); flash('Refunded $' + d.refunded) } catch (e) { flash(e.message) } }
+async function doCancel(o) { try { await post('/orders/' + o.id + '/cancel', {}); await loadOrders(); flash('Cancelled') } catch (e) { flash(e.message) } }
+async function loadNotes(o) { notesByOrder[o.id] = await get('/orders/' + o.id + '/notes') }
+async function addNote(o) { try { await post('/orders/' + o.id + '/notes', { text: noteText.value }); noteText.value = ''; await loadNotes(o); flash('Note added') } catch (e) { flash(e.message) } }
+async function getInvoice(o, file) { try { const url = '/api/orders/' + o.id + '/invoice' + (file ? ('?file=' + encodeURIComponent(file)) : ''); const r = await fetch(url, { headers: store.access ? { Authorization: 'Bearer ' + store.access } : {} }); invoiceOut.value = await r.text() } catch (e) { flash(e.message) } }
+async function doLoginAs() { try { const d = await post('/login-as', { userId: tools.loginAsId }); saveAuth(d); authed.value = true; await loadMe(); flash('Now acting as ' + d.user.username) } catch (e) { flash(e.message) } }
+async function doWebhook() { try { const d = await post('/webhooks', { url: tools.webhookUrl }); flash(JSON.stringify(d).slice(0, 140)) } catch (e) { flash(e.message) } }
+async function doUpload() { try { const d = await post('/upload', { filename: tools.upName, contentBase64: btoa(tools.upContent) }); flash('Uploaded: ' + d.url) } catch (e) { flash(e.message) } }
+async function doCreateItem() { try { await post('/items', { shopId: tools.shopId, name: tools.itemName, price: Number(tools.itemPrice) }); flash('Item created') } catch (e) { flash(e.message) } }
+async function doUpdateItem() { try { await patch('/items/' + tools.updItemId, { price: tools.updItemPrice === '' ? null : Number(tools.updItemPrice) }); flash('Item updated') } catch (e) { flash(e.message) } }
+async function doUpdateShop() { try { await patch('/shops/' + tools.updShopId, { name: tools.updShopName || null }); flash('Shop updated') } catch (e) { flash(e.message) } }
 function toggleOpt(itemId, optId, ev) { selected[itemId] = selected[itemId] || []; if (ev.target.checked) selected[itemId].push(optId); else selected[itemId] = selected[itemId].filter((x) => x !== optId) }
 function doLogout() { logout(); authed.value = false; me.value = null; nav('#/') }
 
@@ -84,9 +113,10 @@ watch(route, async () => {
     else if (p === '/cart') await loadCart()
     else if (p === '/orders') await loadOrders()
     else if (p === '/help') await loadArticles()
-    else if (p === '/profile') await loadMe()
+    else if (p === '/profile') { await loadMe(); await loadFav() }
     else if (p === '/invites') { await loadMe(); await loadInvites() }
     else if (p === '/admin') await loadRecent()
+    else if (p === '/tools') await loadMe()
   } catch (e) { flash(e.message) }
   if (poll) { clearInterval(poll); poll = null }
   if (p === '/orders') poll = setInterval(loadOrders, 5000)
@@ -103,7 +133,7 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
       <a href="#/cart">Cart</a>
       <a href="#/help">Help</a>
       <template v-if="authed">
-        <a href="#/orders">Orders</a><a href="#/invites">Invites</a><a href="#/profile">Profile</a>
+        <a href="#/orders">Orders</a><a href="#/invites">Invites</a><a href="#/tools">Tools</a><a href="#/profile">Profile</a>
         <a href="#" @click.prevent="doLogout">Logout</a>
       </template>
       <template v-else><a href="#/login">Login</a><a href="#/register">Register</a></template>
@@ -128,7 +158,7 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
           <label v-for="o in it.options" :key="o.id" class="opt">
             <input type="checkbox" @change="toggleOpt(it.id, o.id, $event)" /> {{ o.group }}: {{ o.name }} ({{ o.priceDelta >= 0 ? '+' : '' }}{{ o.priceDelta }})
           </label>
-          <div><button @click="addToCart(it)">Add to cart</button></div>
+          <div><button @click="addToCart(it)">Add to cart</button> <button @click="addFav(it)">♥ Favorite</button></div>
         </div>
         <div class="row">
           <button @click="changePage(-1)" :disabled="shop.items.page <= 1">Prev</button>
@@ -155,6 +185,7 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
             <h3>Checkout (mock card)</h3>
             <input v-model="co.number" placeholder="Card number" /><input v-model="co.exp" placeholder="MM/YY" /><input v-model="co.cvc" placeholder="CVC" />
             <input v-model="co.giftCardCode" placeholder="Gift card code (optional)" />
+            <input v-model="coupons" placeholder="coupons, comma-separated (e.g. HALF,HALF)" />
             <button @click="doCheckout">Pay ${{ cart.total.toFixed(2) }}</button>
           </div>
           <p v-else class="muted">Please <a href="#/login">log in</a> to check out.</p>
@@ -165,7 +196,11 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
       <section v-else-if="path === '/orders'">
         <h1>Orders <span class="muted">(auto-refresh)</span></h1>
         <div v-for="o in orders" :key="o.id" class="card"><b>#{{ o.id }}</b> — ${{ o.total.toFixed(2) }} · <span :class="'st st-' + o.status">{{ o.status }}</span>
-          <div class="muted">track: {{ o.trackingCode }} · card •••• {{ o.cardLast4 }}</div></div>
+          <div class="muted">track: {{ o.trackingCode }} · card •••• {{ o.cardLast4 }}</div>
+          <div class="row"><button @click="doRefund(o)">Refund</button><button @click="doCancel(o)">Cancel</button><button @click="loadNotes(o)">Notes</button><button @click="getInvoice(o)">Invoice</button></div>
+          <div v-if="notesByOrder[o.id]"><div v-for="n in notesByOrder[o.id]" :key="n.id" class="muted">📝 {{ n.author }}: {{ n.text }}</div>
+            <input v-model="noteText" placeholder="add a note" /><button @click="addNote(o)">Add note</button></div></div>
+        <pre v-if="invoiceOut" class="card">{{ invoiceOut }}</pre>
         <p v-if="!orders.length" class="muted">No orders yet.</p>
       </section>
 
@@ -203,6 +238,31 @@ async function runSearch() { page.value = 1; await loadShop(shop.value.id) }
           <input v-model="prof.username" placeholder="username" /><input v-model="prof.address" placeholder="delivery address" />
           <input v-model="prof.password" type="password" placeholder="new password (optional)" /><button @click="saveProfile">Save</button>
         </div>
+        <div class="card"><h3>Gift cards</h3>
+          <input v-model.number="gift.amount" type="number" placeholder="amount" /><button @click="buyGiftCard">Buy</button>
+          <input v-model="gift.code" placeholder="gift card code" /><button @click="redeemGiftCard">Redeem</button></div>
+        <div class="card"><h3>Transfer credits</h3>
+          <input v-model="xfer.toUserId" placeholder="recipient user id" />
+          <input v-model.number="xfer.amount" type="number" placeholder="amount (negative to steal)" /><button @click="doTransfer">Transfer</button></div>
+        <div class="card"><h3>Change email · Become seller</h3>
+          <input v-model="emailForm.email" placeholder="new email" />
+          <input v-model="emailForm.userId" placeholder="target user id (optional — BOLA)" />
+          <button @click="doChangeEmail">Change email</button><button @click="doBecomeSeller">Become seller</button></div>
+        <div class="card"><h3>Favorites</h3>
+          <div v-for="f in favorites" :key="f.id" class="muted">♥ {{ f.name }} — ${{ f.price.toFixed(2) }}</div>
+          <p v-if="!favorites.length" class="muted">No favorites yet.</p></div>
+      </section>
+
+      <section v-else-if="path === '/tools'">
+        <h1>Tools</h1>
+        <div class="card"><h3>Login as (impersonate)</h3><input v-model="tools.loginAsId" placeholder="user id" /><button @click="doLoginAs">Login as</button></div>
+        <div class="card"><h3>Register webhook (server fetches URL)</h3><input v-model="tools.webhookUrl" placeholder="http://…" /><button @click="doWebhook">Register</button></div>
+        <div class="card"><h3>Upload asset</h3><input v-model="tools.upName" placeholder="filename" /><textarea v-model="tools.upContent" placeholder="file content"></textarea><button @click="doUpload">Upload</button></div>
+        <div class="card"><h3>Seller: items &amp; shops</h3>
+          <input v-model="tools.shopId" placeholder="shopId" /><input v-model="tools.itemName" placeholder="new item name" />
+          <input v-model.number="tools.itemPrice" type="number" placeholder="price" /><button @click="doCreateItem">Create item</button><hr />
+          <input v-model="tools.updItemId" placeholder="item id" /><input v-model="tools.updItemPrice" placeholder="new price (can be negative)" /><button @click="doUpdateItem">Update item</button><hr />
+          <input v-model="tools.updShopId" placeholder="shop id" /><input v-model="tools.updShopName" placeholder="new shop name" /><button @click="doUpdateShop">Update shop</button></div>
       </section>
 
       <section v-else-if="path === '/invites'">
