@@ -49,8 +49,20 @@ function makeAuth(mut) {
       return null
     }
     if (model === 'session') {
-      const c = (req.headers.cookie || '').match(/mutie_sid=([^;]+)/); if (!c) return null
-      const un = sessions.get(c[1]); return un ? userByName(un) : null
+      const c = (req.headers.cookie || '').match(/mutie_sid=([^;]+)/)
+      if (c) { const un = sessions.get(c[1]); if (un) return userByName(un) }
+      // "remember me" cookie — an alternate credential path that resolves straight to a named user
+      if (on('remember-me')) {
+        const rc = (req.headers.cookie || '').match(/mutie_remember=([^;]+)/)
+        if (rc) {
+          const v = mut.placements.find(p => p.prim === 'remember-me')
+          const variant = v && v.variant
+          let un = null
+          try { un = variant === 'base64-username' ? Buffer.from(rc[1], 'base64').toString('utf8') : rc[1] } catch { un = null }
+          if (un) return userByName(un)
+        }
+      }
+      return null
     }
     // apikey — resolve from the DB so freshly-registered users' keys work too
     const k = req.headers['x-api-key']; if (!k) return null

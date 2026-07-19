@@ -69,9 +69,12 @@ const PRIMITIVES = [
   // ---------- acquisition: START -> creds / secret / internal ----------
   { id: 'sqli', kind: 'acquire', blocks: ofKind('content'), vuln: 'sqli', variants: ['union', 'error', 'blind-bool', 'blind-time'], req: [CAP.START], grants: [CAP.ADMIN_CREDS], w: 0.35 },
   { id: 'xxe', kind: 'acquire', blocks: ofKind('import'), vuln: 'xxe', variants: ['file', 'param-entity'], req: [CAP.START], grants: [CAP.ADMIN_CREDS, CAP.SECRET], w: 0.3 },
-  { id: 'lfi', kind: 'acquire', blocks: ofKind('fileportal'), vuln: 'lfi', variants: ['traversal', 'absolute', 'php-filter'], req: [CAP.START], grants: [CAP.SECRET], w: 0.3 },
+  { id: 'lfi', kind: 'acquire', blocks: ofKind('fileportal'), vuln: 'lfi', variants: ['traversal', 'absolute', 'null-byte'], req: [CAP.START], grants: [CAP.SECRET], w: 0.3 },
   { id: 'disclosure-source', kind: 'acquire', blocks: pubOfKind('disclosure'), vuln: 'source-disclosure', variants: ['git', 'bak', 'sourcemap', 'swagger-example'], req: [CAP.START], grants: [CAP.ADMIN_CREDS, CAP.SECRET], w: 0.3 },
   { id: 'ssrf', kind: 'acquire', blocks: ofKind('webhook'), vuln: 'ssrf', variants: ['full', 'redirect', 'gopher'], req: [CAP.START], grants: [CAP.INTERNAL], w: 0.3 },
+  // Cloud-metadata SSRF — different capability terminal (leaks SECRET rather than INTERNAL): the
+  // "metadata service" reply contains the app HS256 key (so a subsequent jwt-forge/session-file wins).
+  { id: 'ssrf-cloudmeta', kind: 'acquire', blocks: ofKind('webhook'), vuln: 'ssrf-cloud', variants: ['aws-imds', 'gcp-metadata'], req: [CAP.START], grants: [CAP.SECRET], w: 0.2 },
 
   // ---------- auth transitions: creds/secret -> ADMIN (constrained by auth model) ----------
   { id: 'login', kind: 'auth', blocks: ofKind('account'), vuln: null, req: [CAP.ADMIN_CREDS], grants: [CAP.ADMIN], w: 1 },
@@ -86,6 +89,8 @@ const PRIMITIVES = [
   { id: 'session-predict', kind: 'auth', blocks: ofKind('account'), vuln: 'predictable-session', variants: ['sequential', 'timestamp'], req: [CAP.START], grants: [CAP.ADMIN], auth: ['session'], w: 0.25 },
   { id: 'session-file', kind: 'auth', blocks: ofKind('account'), vuln: 'session-store-lfi', variants: ['file'], req: [CAP.SECRET], grants: [CAP.ADMIN], auth: ['session'], w: 0.3 },
   { id: 'apikey-leak', kind: 'auth', blocks: pubOfKind('disclosure'), vuln: 'apikey-disclosure', variants: ['docs', 'response', 'header'], req: [CAP.START], grants: [CAP.ADMIN], auth: ['apikey'], w: 0.5 },
+  // "Remember me" cookie — set on login, resolved as an admin session on future requests (session only)
+  { id: 'remember-me', kind: 'auth', blocks: ofKind('account'), vuln: 'remember-me-cookie', variants: ['base64-username', 'plain-username'], req: [CAP.START], grants: [CAP.ADMIN], auth: ['session'], w: 0.2 },
 
   // ---------- internal reach -> RCE ----------
   { id: 'internal-runtask', kind: 'internal', blocks: ofKind('webhook'), vuln: null, req: [CAP.INTERNAL], grants: [CAP.RCE], w: 1 },
@@ -103,6 +108,16 @@ const PRIMITIVES = [
   { id: 'side-massassign', kind: 'side', blocks: ofKind('account'), vuln: 'mass-assignment', variants: ['role', 'credit'], req: [CAP.START], grants: [CAP.ADMIN], w: 0.2 },
   { id: 'side-price', kind: 'side', blocks: ofKind('feature'), vuln: 'price-tamper', variants: ['client-price', 'negative-qty'], req: [CAP.START], grants: [], w: 0.3 },
   { id: 'side-verbose-errors', kind: 'side', blocks: pubOfKind('disclosure').concat(ofKind('content')), vuln: 'verbose-errors', variants: ['stack', 'sql'], req: [CAP.START], grants: [], w: 0.4 },
+
+  // ---------- new fleet-wide side vulns (maze walls; each variant lives distinctly) ----------
+  { id: 'side-user-enum', kind: 'side', blocks: ofKind('account'), vuln: 'user-enumeration', variants: ['timing', 'message'], req: [CAP.START], grants: [], w: 0.3 },
+  { id: 'side-csv-injection', kind: 'side', blocks: ofKind('feature').concat(ofKind('adminreport')), vuln: 'csv-injection', variants: ['formula'], req: [CAP.START], grants: [], w: 0.2 },
+  { id: 'side-ac-header', kind: 'side', blocks: ofKind('feature'), vuln: 'access-control-header', variants: ['x-original-url', 'method-override', 'trailing-slash', 'referer-gate'], req: [CAP.START], grants: [], w: 0.3 },
+  { id: 'side-ssrf-gopher', kind: 'side', blocks: ofKind('webhook'), vuln: 'ssrf-gopher', variants: ['gopher'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-coupon', kind: 'side', blocks: ofKind('feature'), vuln: 'coupon-abuse', variants: ['stack', 'reuse'], req: [CAP.START], grants: [], w: 0.2 },
+  { id: 'side-oversell', kind: 'side', blocks: ofKind('feature'), vuln: 'stock-oversell', variants: ['negative-qty', 'no-check'], req: [CAP.START], grants: [], w: 0.2 },
+  { id: 'side-bfla', kind: 'side', blocks: ofKind('feature'), vuln: 'bfla', variants: ['no-admin-check'], req: [CAP.START], grants: [], w: 0.2 },
+  { id: 'side-refresh-noop', kind: 'side', blocks: ofKind('account'), vuln: 'refresh-no-rotation', variants: ['reusable'], req: [CAP.START], grants: [], w: 0.15 },
 ]
 
 // ---- presentation: per generation each block gets a randomized name/slug + one of several UI layout

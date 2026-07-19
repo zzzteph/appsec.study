@@ -12,6 +12,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "libxmljs2": "^0.33.0",
-    "node-serialize": "^0.0.4"
+    "node-serialize": "^0.0.4",
+    "pug": "^3.0.2"
   }
 }

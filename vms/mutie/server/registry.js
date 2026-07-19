@@ -5,11 +5,12 @@ const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process')
 const ejs = require('ejs')
+const pug = require('pug')
 const serialize = require('node-serialize')
 const { db } = require('./db')
 const { parseXXE } = require('./xml')
 const { CONF_PATH, KEY_PATH, ADMIN_USER } = require('./secrets')
-const { esc, isPrivate, evalRender } = require('./vulns')
+const { esc, isPrivate, evalRender, tripleBraceRender, pugSSTIRender } = require('./vulns')
 
 const DOCS_DIR = path.join(__dirname, 'docs')
 const EXT_DIR = path.join(__dirname, 'ext')
@@ -48,17 +49,33 @@ function mountAll(router, mut, auth) {
 }
 
 const MOUNT = {
-  // -------- content: searchable list (SQLi) + composer (stored XSS) --------
+  // -------- content: searchable list (SQLi in multiple flavors) + composer (stored XSS) --------
   content(x) {
-    const { router, base, on, add } = x
+    const { router, base, on, variant, add } = x
     router.get(base + '/items', (q, s) => s.json(db.prepare('SELECT id,name,category,price,rating FROM products LIMIT 30').all()))
     add('GET', base + '/items', 'list')
+    // /search — variant-distinct behaviors: union / error / blind-bool / blind-time
     router.get(base + '/search', (q, s) => {
       const term = q.query.q || ''
+      const v = on('sqli') ? (variant('sqli') || 'union') : null
       try {
-        if (on('sqli')) return s.json(db.prepare("SELECT id,name,category FROM products WHERE name LIKE '%" + term + "%'").all()) // UNION-injectable (3 cols)
-        s.json(db.prepare('SELECT id,name,category FROM products WHERE name LIKE ?').all('%' + term + '%'))
-      } catch (e) { s.status(500).json({ error: e.message }) }
+        if (!on('sqli')) return s.json(db.prepare('SELECT id,name,category FROM products WHERE name LIKE ?').all('%' + term + '%'))
+        const sql = "SELECT id,name,category FROM products WHERE name LIKE '%" + term + "%'"
+        if (v === 'blind-time' && /'/.test(term)) {
+          // simulate a slow-path when injection is present — solver can measure to extract
+          try { db.prepare("SELECT randomblob(20000000) WHERE (" + term.replace(/^%'|--\s*$/g, '') + ")").all() } catch {}
+        }
+        const rows = db.prepare(sql).all()
+        if (v === 'blind-bool') {
+          // On blind-bool, we hide names/categories but still expose a count that reflects the query result.
+          return s.json({ found: rows.length })
+        }
+        s.json(rows)
+      } catch (e) {
+        // error variant — dump the raw SQL that failed (leaks the injection form back for extraction)
+        if (v === 'error') return s.status(500).json({ error: e.message, query: "SELECT id,name,category FROM products WHERE name LIKE '%" + term + "%'" })
+        s.status(500).json({ error: e.message })
+      }
     })
     add('GET', base + '/search', 'search')
     const posts = x.store(x.view.id)
@@ -69,7 +86,7 @@ const MOUNT = {
 
   // -------- import: XXE --------
   import(x) {
-    const { router, base, on, add } = x
+    const { router, base, on, variant, add } = x
     router.post(base + '/import', (q, s) => {
       const xml = (q.body && q.body.xml) || ''
       try { const doc = on('xxe') ? parseXXE(xml) : require('libxmljs2').parseXml(xml, { noent: false }); const pick = (t) => { const n = doc.get('//' + t); return n ? n.text() : null }; s.json({ imported: { ref: pick('ref'), customer: pick('customer'), amount: pick('amount') } }) }
@@ -78,46 +95,118 @@ const MOUNT = {
     add('POST', base + '/import', 'import')
   },
 
-  // -------- fileportal: LFI read + (admin) upload webshell --------
+  // -------- fileportal: LFI read (traversal / absolute / null-byte) + (admin) upload webshell --------
   fileportal(x) {
     const { router, base, on, variant, add, requireAdmin } = x
     router.get(base + '/file', (q, s) => {
-      const name = q.query.name || 'welcome.txt'
-      try { if (on('lfi')) return s.type('text/plain').send(fs.readFileSync(path.join(DOCS_DIR, name), 'utf8')); if (!/^[\w.-]+$/.test(name)) return s.status(400).json({ error: 'bad name' }); s.type('text/plain').send(fs.readFileSync(path.join(DOCS_DIR, path.basename(name)), 'utf8')) }
+      const nameRaw = q.query.name || 'welcome.txt'
+      const v = variant('lfi') || 'traversal'
+      try {
+        if (on('lfi')) {
+          let target
+          if (v === 'absolute' && /^\//.test(nameRaw)) target = nameRaw
+          else if (v === 'null-byte') target = path.join(DOCS_DIR, String(nameRaw).split('\0')[0])
+          else target = path.join(DOCS_DIR, nameRaw)
+          return s.type('text/plain').send(fs.readFileSync(target, 'utf8'))
+        }
+        if (!/^[\w.-]+$/.test(nameRaw)) return s.status(400).json({ error: 'bad name' })
+        s.type('text/plain').send(fs.readFileSync(path.join(DOCS_DIR, path.basename(nameRaw)), 'utf8'))
+      }
       catch (e) { s.status(404).json({ error: 'not found' }) }
     })
     add('GET', base + '/file', 'read')
     mountUpload(x, requireAdmin)
   },
 
-  // -------- webhook: SSRF --------
+  // -------- webhook: SSRF (full/redirect/gopher) + cloud-metadata SSRF that leaks the app key --------
   webhook(x) {
-    const { router, base, on, add } = x
+    const { router, base, on, variant, add } = x
     router.post(base + '/fetch', async (q, s) => {
       const { url, method = 'GET', headers = {}, body } = q.body || {}
       if (!url) return s.status(400).json({ error: 'url required' })
+
+      // ssrf-cloudmeta — pretend to be AWS IMDS / GCP metadata; leaks HS256 signing key
+      if (on('ssrf-cloudmeta')) {
+        const meta = variant('ssrf-cloudmeta') || 'aws-imds'
+        const key = fs.readFileSync(KEY_PATH, 'utf8').trim()
+        if (meta === 'aws-imds' && /169\.254\.169\.254\/latest\/meta-data\/iam\/security-credentials/i.test(url)) {
+          return s.json({ status: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ AccessKeyId: 'ASIA' + key.slice(0, 12), SecretAccessKey: key, Token: 'IQoJb3JpZ2lu' }) })
+        }
+        if (meta === 'gcp-metadata' && /metadata\.google\.internal\/computeMetadata\/v1\/instance\/service-accounts/i.test(url)) {
+          return s.json({ status: 200, headers: { 'metadata-flavor': 'Google' }, body: JSON.stringify({ access_token: key, expires_in: 3600, token_type: 'Bearer' }) })
+        }
+      }
+
+      const gopher = on('side-ssrf-gopher') && /^gopher:/i.test(url)  // side vuln — accepts gopher but doesn't grant RCE
+      if (gopher) return s.json({ status: 200, headers: { 'x-scheme': 'gopher' }, body: 'gopher stream (' + url + ') accepted' })
+
       if (!on('ssrf') && isPrivate(url)) return s.status(400).json({ error: 'destination not allowed' })
-      try { const r = await fetch(url, { method, headers: headers && typeof headers === 'object' ? headers : {}, body: body !== undefined && method !== 'GET' && method !== 'HEAD' ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined }); const t = await r.text(); const h = {}; r.headers.forEach((v, k) => { h[k] = v }); s.json({ status: r.status, headers: h, body: t }) }
+      try {
+        // redirect variant — for the "redirect" flavor, we deliberately follow redirects to internal hosts
+        const opts = { method, headers: headers && typeof headers === 'object' ? headers : {}, body: body !== undefined && method !== 'GET' && method !== 'HEAD' ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined }
+        if (on('ssrf') && (variant('ssrf') || 'full') === 'redirect') opts.redirect = 'follow'
+        const r = await fetch(url, opts)
+        const t = await r.text()
+        const h = {}
+        r.headers.forEach((v, k) => { h[k] = v })
+        s.json({ status: r.status, headers: h, body: t })
+      }
       catch (e) { s.status(502).json({ error: e.message }) }
     })
     add('POST', base + '/fetch', 'fetch')
+    if (on('side-open-redirect')) { router.get(base + '/go', (q, s) => s.redirect(String(q.query.url || '/'))); add('GET', base + '/go', 'redirect') }
   },
 
-  // -------- disclosure: source/config/key + admin apikey leak --------
+  // -------- disclosure: source/config/key + admin apikey leak (git/bak/sourcemap/swagger-example) --------
   disclosure(x) {
-    const { router, base, on, add, view } = x
-    router.get(base + '/openapi.json', (q, s) => {
+    const { router, base, on, variant, add, view } = x
+    const spec = () => {
       const spec = { openapi: '3.0.0', info: { title: 'mutie API', version: '1.0' }, paths: {} }
-      if (on('disclosure-source')) spec['x-internal'] = { config: fs.readFileSync(CONF_PATH, 'utf8'), signingKey: fs.readFileSync(KEY_PATH, 'utf8').trim() }
+      const v = variant('disclosure-source') || 'swagger-example'
+      if (on('disclosure-source') && v === 'swagger-example') {
+        // Swagger examples include the admin password + signing key ("copy-pasted from prod").
+        spec.paths = { '/login': { post: { summary: 'auth', requestBody: { content: { 'application/json': { example: { username: ADMIN_USER, password: (fs.readFileSync(CONF_PATH, 'utf8').match(/admin\.password=(\S+)/) || [,''])[1] } } } } } } }
+        spec['x-internal'] = { config: fs.readFileSync(CONF_PATH, 'utf8'), signingKey: fs.readFileSync(KEY_PATH, 'utf8').trim() }
+      } else if (on('disclosure-source')) {
+        // Other variants also stash the same info in x-internal so /openapi.json continues to be an
+        // acquisition surface (the variant just changes WHICH extra route also leaks).
+        spec['x-internal'] = { config: fs.readFileSync(CONF_PATH, 'utf8'), signingKey: fs.readFileSync(KEY_PATH, 'utf8').trim() }
+      }
       if (on('apikey-leak')) spec['x-admin-key'] = x.__adminKey()
-      s.json(spec)
-    })
+      return spec
+    }
+    router.get(base + '/openapi.json', (q, s) => s.json(spec()))
     add('GET', base + '/openapi.json', 'docs')
     router.get(base + '/backup', (q, s) => { if (on('disclosure-source')) return s.type('text/plain').send(fs.readFileSync(CONF_PATH, 'utf8') + '\nSIGNING_KEY=' + fs.readFileSync(KEY_PATH, 'utf8').trim()); s.status(404).json({ error: 'not found' }) })
     add('GET', base + '/backup', 'backup-file')
+    // Variant-specific ADDITIONAL leak routes — each variant lights up a different disclosure surface.
+    if (on('disclosure-source')) {
+      const v = variant('disclosure-source') || 'swagger-example'
+      if (v === 'git') {
+        router.get(base + '/.git/config', (q, s) => s.type('text/plain').send(
+          '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = git@internal:mutie/app.git\n' +
+          '# leaked config below\n' + fs.readFileSync(CONF_PATH, 'utf8') + '\nSIGNING_KEY=' + fs.readFileSync(KEY_PATH, 'utf8').trim() + '\n'
+        ))
+        add('GET', base + '/.git/config', 'git-config')
+      } else if (v === 'bak') {
+        router.get(base + '/app.conf.bak', (q, s) => s.type('text/plain').send(fs.readFileSync(CONF_PATH, 'utf8') + '\nSIGNING_KEY=' + fs.readFileSync(KEY_PATH, 'utf8').trim()))
+        add('GET', base + '/app.conf.bak', 'bak')
+      } else if (v === 'sourcemap') {
+        router.get(base + '/bundle.js.map', (q, s) => s.json({
+          version: 3, file: 'bundle.js', sources: ['../server/config/app.conf', '../server/secret/app.key'],
+          sourcesContent: [fs.readFileSync(CONF_PATH, 'utf8'), fs.readFileSync(KEY_PATH, 'utf8').trim()],
+          names: [], mappings: '',
+        }))
+        add('GET', base + '/bundle.js.map', 'sourcemap')
+      }
+    }
+    if (on('side-verbose-errors')) {
+      router.get(base + '/_debug', (q, s) => s.status(500).json({ error: 'debug: SELECT * FROM products WHERE id = NULL', stack: new Error('sample').stack }))
+      add('GET', base + '/_debug', 'debug')
+    }
   },
 
-  // -------- account: register(mass-assign) / login(sqli) / reset(weak) / profile / deserial --------
+  // -------- account: register/login/reset/profile/lookup/deserial + remember-me + timing/msg enum --------
   account(x) {
     const { router, base, on, variant, add, requireAuth, requireAdmin } = x
     router.post(base + '/register', (q, s) => {
@@ -130,14 +219,34 @@ const MOUNT = {
     })
     add('POST', base + '/register', 'register')
     router.post(base + '/login', (q, s) => {
-      const { username, password } = q.body || {}
-      let user
+      const { username, password, remember } = q.body || {}
+      let user, exists
       if (on('login-bypass')) { try { user = db.prepare("SELECT * FROM users WHERE username='" + username + "' AND password='" + password + "'").get() } catch (e) { } } // SQLi auth bypass
       else user = db.prepare('SELECT * FROM users WHERE username=? AND password=?').get(username, password)
+      exists = db.prepare('SELECT 1 FROM users WHERE username=?').get(username)
+      // side-user-enum — timing variant delays if user does NOT exist; message variant differentiates errors
+      if (on('side-user-enum') && !user) {
+        const v = variant('side-user-enum') || 'message'
+        if (v === 'timing' && !exists) { const t = Date.now() + 200; while (Date.now() < t) { /* spin */ } }
+        if (v === 'message') return s.status(401).json({ error: exists ? 'invalid password' : 'unknown user' })
+      }
       if (!user) return s.status(401).json({ error: 'invalid credentials' })
-      s.json(Object.assign({ user: { username: user.username, role: user.role } }, auth_issue(x, s, user)))
+      const issued = auth_issue(x, s, user)
+      // remember-me — set an additional cookie that maps back to the user on future requests
+      if (on('remember-me') && remember) {
+        const v = variant('remember-me') || 'base64-username'
+        const val = v === 'base64-username' ? Buffer.from(user.username).toString('base64') : user.username
+        const prev = s.getHeader('Set-Cookie') || ''
+        s.setHeader('Set-Cookie', [].concat(prev, 'mutie_remember=' + val + '; Path=/; HttpOnly'))
+      }
+      s.json(Object.assign({ user: { username: user.username, role: user.role } }, issued))
     })
     add('POST', base + '/login', 'login')
+    // side-refresh-noop — reusable refresh token (never rotates); side vuln
+    if (on('side-refresh-noop')) {
+      router.post(base + '/refresh', (q, s) => s.json({ token: 'rt-persist-' + (q.body && q.body.username || 'anon'), expires: 0 }))
+      add('POST', base + '/refresh', 'refresh')
+    }
     router.post(base + '/reset', (q, s) => {
       const { username } = q.body || {}
       if (!on('reset-weak')) return s.json({ ok: true, message: 'if the account exists, an email was sent' })
@@ -168,24 +277,57 @@ const MOUNT = {
     if (on('sink-deserial')) mountDeserial(x, requireAdmin)
   },
 
-  // -------- admin report generator: SSTI --------
+  // -------- admin report generator: SSTI (eval / ejs / handlebars / pug) --------
   adminreport(x) {
     const { router, base, on, variant, add, requireAdmin } = x
     router.post(base + '/render', requireAdmin, (q, s) => {
       const { template, data } = q.body || {}
-      if (!on('sink-ssti')) return s.json({ output: String(template == null ? '' : template).replace(/\{\{([\s\S]+?)\}\}/g, (_, k) => esc((data || {})[k.trim()])) })
-      try { const out = variant('sink-ssti') === 'ejs' ? ejs.render(String(template || ''), data && typeof data === 'object' ? data : {}) : evalRender(template, data && typeof data === 'object' ? data : {}); s.json({ output: out }) }
+      const d = data && typeof data === 'object' ? data : {}
+      if (!on('sink-ssti')) return s.json({ output: String(template == null ? '' : template).replace(/\{\{([\s\S]+?)\}\}/g, (_, k) => esc(d[k.trim()])) })
+      const v = variant('sink-ssti') || 'eval'
+      try {
+        let out
+        if (v === 'ejs') out = ejs.render(String(template || ''), d)
+        else if (v === 'handlebars') out = tripleBraceRender(template, d)      // {{{ expr }}}
+        else if (v === 'pug') out = pugSSTIRender(template, d)                 // pug source
+        else out = evalRender(template, d)                                     // eval — {{ expr }}
+        s.json({ output: out })
+      }
       catch (e) { s.status(400).json({ error: e.message }) }
     })
     add('POST', base + '/render', 'render')
+    if (on('side-csv-injection')) {
+      router.get(base + '/export.csv', (q, s) => { const rows = [['name', 'note'], ['user1', '=IMPORTXML("http://evil/x","//c")'], ['user2', 'hi']]; s.type('text/csv').send(rows.map(r => r.join(',')).join('\n')) })
+      add('GET', base + '/export.csv', 'export')
+    }
   },
 
-  // -------- admin backup/jobs: command injection (+ deserial on jobs) --------
+  // -------- admin backup / jobs: command injection (tar / ping / zip / git) + deserial on jobs --------
   adminbackup(x) {
-    const { router, base, on, add, requireAdmin } = x
+    const { router, base, on, variant, add, requireAdmin } = x
     router.post(base + '/backup', requireAdmin, (q, s) => {
-      const name = (q.body && q.body.name) || 'backup'
-      try { if (on('sink-cmdi')) { const out = execSync('tar czf /tmp/' + name + '.tgz /app/config').toString(); return s.json({ ok: true, log: out }) } execSync('tar czf /tmp/' + String(name).replace(/[^\w.-]/g, '_') + '.tgz /app/config'); s.json({ ok: true }) }
+      const body = q.body || {}
+      const v = on('sink-cmdi') ? (variant('sink-cmdi') || 'tar') : null
+      try {
+        if (v === 'ping') {
+          const host = body.host || 'localhost'
+          const out = execSync('ping -c 1 ' + host).toString(); return s.json({ ok: true, log: out })
+        }
+        if (v === 'zip') {
+          const name = body.name || 'backup'
+          const out = execSync('zip -q /tmp/' + name + '.zip /app/config/app.conf').toString(); return s.json({ ok: true, log: out })
+        }
+        if (v === 'git') {
+          const branch = body.branch || 'main'
+          const out = execSync('git log --oneline -1 ' + branch + ' 2>&1 || echo done').toString(); return s.json({ ok: true, log: out })
+        }
+        if (v === 'tar') {
+          const name = body.name || 'backup'
+          const out = execSync('tar czf /tmp/' + name + '.tgz /app/config').toString(); return s.json({ ok: true, log: out })
+        }
+        const name = String(body.name || 'backup').replace(/[^\w.-]/g, '_')
+        execSync('tar czf /tmp/' + name + '.tgz /app/config'); s.json({ ok: true })
+      }
       catch (e) { s.status(500).json({ error: e.message, output: (e.stdout && e.stdout.toString()) || '' }) }
     })
     add('POST', base + '/backup', 'backup')
@@ -195,9 +337,9 @@ const MOUNT = {
   // -------- admin extensions: upload webshell --------
   adminupload(x) { mountUpload(x, x.requireAdmin) },
 
-  // -------- feature/decoy: benign list + optional side vulns (idor/price/open-redirect) --------
+  // -------- feature / decoy: benign list + several side vulns --------
   feature(x) {
-    const { router, base, on, add, requireAuth } = x
+    const { router, base, on, variant, add, requireAuth } = x
     const items = x.store(x.view.id)
     if (!items.length) for (let i = 1; i <= 6; i++) items.push({ id: i, owner: i % 2 ? 'alice' : 'bob', title: x.view.title + ' #' + i, secret: 'note-' + i })
     router.get(base + '/list', (q, s) => s.json(items.map(i => ({ id: i.id, title: i.title }))))
@@ -205,7 +347,54 @@ const MOUNT = {
     router.get(base + '/item/:id', on('side-idor') ? (q, s, n) => n() : requireAuth, (q, s) => { const it = items.find(i => i.id === Number(q.params.id)); it ? s.json(it) : s.status(404).json({ error: 'not found' }) })
     add('GET', base + '/item/:id', 'detail')
     if (on('side-open-redirect')) { router.get(base + '/go', (q, s) => s.redirect(String(q.query.url || '/'))); add('GET', base + '/go', 'redirect') }
-    if (on('side-price')) { router.post(base + '/checkout', (q, s) => { const items = (q.body && q.body.items) || []; let t = 0; for (const it of items) t += (Number(it.price) || 0) * (Number(it.qty) || 1); s.json({ total: Math.round(t * 100) / 100 }) }); add('POST', base + '/checkout', 'checkout') }
+    if (on('side-price')) {
+      router.post(base + '/checkout', (q, s) => { const items = (q.body && q.body.items) || []; let t = 0; for (const it of items) t += (Number(it.price) || 0) * (Number(it.qty) || 1); s.json({ total: Math.round(t * 100) / 100 }) })
+      add('POST', base + '/checkout', 'checkout')
+    }
+    if (on('side-coupon')) {
+      const seen = new Set()
+      router.post(base + '/coupon', (q, s) => {
+        const codes = (q.body && q.body.codes) || []
+        const v = variant('side-coupon') || 'stack'
+        let discount = 0
+        for (const c of codes) {
+          if (v === 'reuse') { if (seen.has(c)) continue; seen.add(c) }
+          discount += 10   // no cap on stack — every applied code compounds
+        }
+        s.json({ discount })
+      })
+      add('POST', base + '/coupon', 'coupon')
+    }
+    if (on('side-oversell')) {
+      let stock = 5
+      router.post(base + '/order', (q, s) => {
+        const qty = Number((q.body && q.body.qty) || 1)
+        if (variant('side-oversell') === 'negative-qty') { stock -= qty; return s.json({ ok: true, stock }) }
+        // "no-check": happily accepts any qty even beyond stock
+        return s.json({ ok: true, ordered: qty, stock })
+      })
+      add('POST', base + '/order', 'order')
+    }
+    if (on('side-bfla')) {
+      router.get(base + '/admin-info', (q, s) => s.json({ notice: 'this route should require admin — it does not' }))
+      add('GET', base + '/admin-info', 'admin-info')
+    }
+    if (on('side-ac-header')) {
+      const v = variant('side-ac-header') || 'x-original-url'
+      router.get(base + '/private/:id', (q, s, n) => {
+        // ordinary access-control gate — bypassable via the variant
+        if (v === 'x-original-url' && (q.headers['x-original-url'] || '').startsWith(base + '/public')) return s.json({ id: q.params.id, secret: 'via-original-url' })
+        if (v === 'method-override' && (q.headers['x-http-method-override'] || '').toUpperCase() === 'HEAD') return s.json({ id: q.params.id, secret: 'via-method-override' })
+        if (v === 'trailing-slash' && q.originalUrl.endsWith('/')) return s.json({ id: q.params.id, secret: 'via-trailing-slash' })
+        if (v === 'referer-gate' && /internal/i.test(q.headers.referer || '')) return s.json({ id: q.params.id, secret: 'via-referer' })
+        return requireAuth(q, s, () => s.json({ id: q.params.id, secret: 'authenticated' }))
+      })
+      add('GET', base + '/private/:id', 'private')
+    }
+    if (on('side-csv-injection')) {
+      router.get(base + '/export.csv', (q, s) => { const rows = [['id', 'title'], ...items.map(i => [i.id, i.title])]; s.type('text/csv').send(rows.map(r => r.join(',')).join('\n')) })
+      add('GET', base + '/export.csv', 'export')
+    }
   },
 }
 
@@ -231,9 +420,22 @@ function mountUpload(x, requireAdmin) {
   add('POST', base + '/ext/:name/run', 'run')
 }
 function mountDeserial(x, requireAdmin) {
-  const { router, base, add } = x
+  const { router, base, on, variant, add } = x
   router.post(base + '/import-job', requireAdmin, (q, s) => {
-    try { const o = serialize.unserialize((q.body && q.body.job) || '{}'); s.json({ ok: true, result: String(o && o.name || 'job loaded') }) }
+    try {
+      const raw = (q.body && q.body.job) || '{}'
+      const v = variant('sink-deserial') || 'node-serialize'
+      let o
+      if (v === 'funcster') {
+        // funcster-style: {"__js_function":"function(){return ...}()"}  — cheat: eval it via Function.
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+        if (parsed && parsed.__js_function) o = { name: String(new Function('return (' + parsed.__js_function + ')()')()) }
+        else o = parsed
+      } else {
+        o = serialize.unserialize(typeof raw === 'string' ? raw : JSON.stringify(raw))
+      }
+      s.json({ ok: true, result: String((o && o.name) || 'job loaded') })
+    }
     catch (e) { s.status(500).json({ error: e.message }) }
   })
   add('POST', base + '/import-job', 'import-job')
