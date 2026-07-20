@@ -27,21 +27,18 @@ insU.run('alice', 'sunflower12', 'user', 'alice@maze.local', 'Alice Carter', C.p
 insU.run('bob', 'qwerty2024', 'user', 'bob@maze.local', 'Bob Nguyen', C.pick(C.BIOS), '', 'ak_live_' + Math.random().toString(16).slice(2, 10))
 insU.run('carol', 'letmein!', 'partner', 'carol@maze.local', 'Carol Patel', C.pick(C.BIOS), 'partner rep', 'ak_live_' + Math.random().toString(16).slice(2, 10))
 const usernames = ['alice', 'bob', 'carol']
-for (let i = 0; i < 26; i++) {
+for (let i = 0; i < 56; i++) {
   const name = C.fullName(); const un = C.usernameFrom(name, i)
   usernames.push(un)
-  insU.run(un, 'pw_' + Math.random().toString(16).slice(2, 8), C.chance(0.15) ? 'partner' : 'user', un + '@maze.local', name, C.pick(C.BIOS), '', 'ak_live_' + Math.random().toString(16).slice(2, 10))
+  insU.run(un, 'pw_' + Math.floor(C.R() * 0xffffff).toString(16), C.pick(C.ROLES), un + '@maze.local', name, C.pick(C.BIOS), '', 'ak_live_' + Math.floor(C.R() * 0xffffffff).toString(16))
 }
 
-// ---- products ----
+// ---- products (a full catalog) ----
 const insP = db.prepare('INSERT INTO products(name,category,price,stock,rating,description) VALUES (?,?,?,?,?,?)')
-for (let i = 0; i < 24; i++) insP.run(C.productName(), C.pick(C.CATS), (C.int(500, 12000) / 100), C.int(0, 400), (C.int(30, 50) / 10), C.paragraph())
+for (let i = 0; i < 60; i++) insP.run(C.productName(), C.pick(C.CATS), (C.int(500, 12000) / 100), C.int(0, 400), (C.int(30, 50) / 10), C.paragraph())
 
-// ---- posts ----
+// ---- posts (a busy feed) ----
 const insPost = db.prepare('INSERT INTO posts(author,body,created,likes,has_image) VALUES (?,?,?,?,?)')
-for (let i = 0; i < 36; i++) {
-  const d = new Date(Date.now() - C.int(0, 20) * 86400000).toISOString().slice(0, 10)
-  insPost.run(C.pick(usernames), C.pick(C.POSTS), d, C.int(0, 240), C.chance(0.4) ? 1 : 0)
-}
+for (let i = 0; i < 90; i++) insPost.run(C.pick(usernames), C.pick(C.POSTS), C.daysAgoISO(45), C.int(0, 240), C.chance(0.4) ? 1 : 0)
 
 module.exports = { db, usernames }

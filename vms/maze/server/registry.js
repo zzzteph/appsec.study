@@ -8,6 +8,7 @@ const ejs = require('ejs')
 const pug = require('pug')
 const serialize = require('node-serialize')
 const { db } = require('./db')
+const C = require('./content')
 const { parseXXE } = require('./xml')
 const { CONF_PATH, KEY_PATH, ADMIN_USER } = require('./secrets')
 const { esc, isPrivate, evalRender, tripleBraceRender, pugSSTIRender } = require('./vulns')
@@ -46,6 +47,7 @@ function mountAll(router, mut, auth) {
     ;(MOUNT[kind] || MOUNT.feature)(ctx)
     mountExtras(ctx, kind)
     mountSide(ctx)
+    mountUnauthRce(ctx)
   }
   return funcs
 }
@@ -81,6 +83,7 @@ const MOUNT = {
     })
     add('GET', base + '/search', 'search')
     const posts = x.store(x.view.id)
+    if (!posts.length) { const off = String(x.view.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 60; for (const p of db.prepare('SELECT id,author,body FROM posts ORDER BY id LIMIT 14 OFFSET ?').all(off)) posts.push({ id: p.id, title: p.author, body: p.body }) }
     router.get(base + '/posts', (q, s) => s.json(posts))
     router.post(base + '/posts', (q, s) => { const { title, body } = q.body || {}; posts.push({ id: posts.length + 1, title: on('side-xss-stored') ? title : esc(title), body: on('side-xss-stored') ? body : esc(body) }); s.json({ ok: true }) })
     add('GET', base + '/posts', 'list'); add('POST', base + '/posts', 'compose')
@@ -365,7 +368,7 @@ const MOUNT = {
   feature(x) {
     const { router, base, on, variant, add, requireAuth } = x
     const items = x.store(x.view.id)
-    if (!items.length) for (let i = 1; i <= 6; i++) items.push({ id: i, owner: i % 2 ? 'alice' : 'bob', title: x.view.title + ' #' + i, secret: 'note-' + i })
+    if (!items.length) for (let i = 1; i <= 18; i++) items.push({ id: i, owner: C.pick(['alice', 'bob', 'carol']), title: C.productName(), secret: 'note-' + i, updated: C.daysAgoISO(30) })
     router.get(base + '/list', (q, s) => s.json(items.map(i => ({ id: i.id, title: i.title }))))
     add('GET', base + '/list', 'list')
     router.get(base + '/item/:id', on('side-idor') ? (q, s, n) => n() : requireAuth, (q, s) => { const it = items.find(i => i.id === Number(q.params.id)); it ? s.json(it) : s.status(404).json({ error: 'not found' }) })
@@ -453,42 +456,62 @@ function mountExtras(x, kind) {
   router.get(base + '/meta', (q, s) => s.json({ id: view.id, app: view.app, kind, title: view.title, slug: view.slug, uiVariant: view.uiVariant }))
   add('GET', base + '/meta', 'meta')
 
+  // datasets are generated ONCE at mount (deterministic order) so responses are stable + seeded
   if (kind === 'content') {
     const comments = x.store(view.id + ':comments')
-    if (!comments.length) comments.push({ id: 1, user: 'alice', text: 'Nice one!' }, { id: 2, user: 'bob', text: 'Thanks for sharing.' })
+    if (!comments.length) for (let i = 1; i <= C.int(6, 12); i++) comments.push({ id: i, user: C.usernameFrom(C.fullName(), i), text: C.comment(), at: C.daysAgoISO(20) })
     router.get(base + '/comments', (q, s) => s.json(comments)); add('GET', base + '/comments', 'comments')
     router.post(base + '/comments', (q, s) => { comments.push({ id: comments.length + 1, user: esc((q.body && q.body.user) || 'guest'), text: esc((q.body && q.body.text) || '') }); s.json({ ok: true }) })
     add('POST', base + '/comments', 'comment-add')
-    router.get(base + '/tags', (q, s) => s.json(['news', 'featured', 'popular', 'editor-pick', 'trending', view.app].map((t, i) => ({ tag: t, count: 3 + (i * 7 % 20) })))); add('GET', base + '/tags', 'tags')
-    router.get(base + '/related', (q, s) => s.json(db.prepare('SELECT id,name,category,price FROM products WHERE id % 3 = ? LIMIT 6').all(seedNum % 3))); add('GET', base + '/related', 'related')
+    const tags = ['news', 'featured', 'popular', 'editor-pick', 'trending', 'how-to', 'release', view.app, ...C.sample(C.CATS, 3)].map((t, i) => ({ tag: t, count: 3 + (i * 7 % 40) }))
+    router.get(base + '/tags', (q, s) => s.json(tags)); add('GET', base + '/tags', 'tags')
+    const related = db.prepare('SELECT id,name,category,price,rating FROM products ORDER BY id LIMIT 8 OFFSET ?').all(seedNum % 40)
+    router.get(base + '/related', (q, s) => s.json(related)); add('GET', base + '/related', 'related')
+    const reviews = C.times(C.int(6, 12), (i) => ({ id: i + 1, author: C.fullName(), rating: C.int(3, 5), text: C.review(), at: C.daysAgoISO(60) }))
+    router.get(base + '/reviews', (q, s) => s.json(reviews)); add('GET', base + '/reviews', 'reviews')
   } else if (kind === 'feature') {
-    router.get(base + '/stats', (q, s) => s.json({ views: 1000 + seedNum, likes: seedNum % 300, shares: seedNum % 40 })); add('GET', base + '/stats', 'stats')
-    router.get(base + '/activity', (q, s) => s.json([{ ts: 't-1', who: 'alice', what: 'updated' }, { ts: 't-2', who: 'bob', what: 'commented' }])); add('GET', base + '/activity', 'activity')
+    const stats = { views: 1000 + seedNum * 7, likes: seedNum % 900, shares: seedNum % 120, followers: 200 + seedNum % 800 }
+    router.get(base + '/stats', (q, s) => s.json(stats)); add('GET', base + '/stats', 'stats')
+    const activity = C.times(C.int(6, 10), (i) => ({ ts: C.daysAgoISO(14), who: C.usernameFrom(C.fullName(), i), what: C.pick(['updated', 'commented', 'favorited', 'shared', 'created', 'archived']) }))
+    router.get(base + '/activity', (q, s) => s.json(activity)); add('GET', base + '/activity', 'activity')
     const favs = x.store(view.id + ':favs')
     router.post(base + '/favorite/:id', (q, s) => { const id = Number(q.params.id); const i = favs.indexOf(id); i >= 0 ? favs.splice(i, 1) : favs.push(id); s.json({ ok: true, favorited: favs.includes(id) }) })
     add('POST', base + '/favorite/:id', 'favorite')
   } else if (kind === 'account') {
-    router.get(base + '/sessions', requireAuth, (q, s) => s.json([{ id: 's1', ua: 'Chrome', ip: '10.0.0.5', current: true }, { id: 's2', ua: 'Safari', ip: '10.0.0.9' }])); add('GET', base + '/sessions', 'sessions')
-    router.get(base + '/activity', requireAuth, (q, s) => s.json([{ ts: 't-1', event: 'login', ip: '10.0.0.5' }, { ts: 't-2', event: 'password-change' }])); add('GET', base + '/activity', 'activity')
+    const sessions = C.times(C.int(2, 5), (i) => ({ id: 's' + (i + 1), ua: C.pick(['Chrome/126', 'Safari/17', 'Firefox/127', 'Edge/126']), ip: '10.0.' + C.int(0, 9) + '.' + C.int(2, 250), city: C.pick(C.CITY), current: i === 0 }))
+    router.get(base + '/sessions', requireAuth, (q, s) => s.json(sessions)); add('GET', base + '/sessions', 'sessions')
+    const acct = C.times(C.int(5, 9), (i) => ({ ts: C.daysAgoISO(30), event: C.pick(['login', 'password-change', 'email-change', 'login', 'token-refresh']), ip: '10.0.' + C.int(0, 9) + '.' + C.int(2, 250) }))
+    router.get(base + '/activity', requireAuth, (q, s) => s.json(acct)); add('GET', base + '/activity', 'activity')
   } else if (kind === 'webhook') {
-    router.get(base + '/deliveries', (q, s) => s.json([{ id: 1, url: 'https://example.com/hook', status: 200 }, { id: 2, url: 'https://example.com/hook2', status: 500 }])); add('GET', base + '/deliveries', 'deliveries')
+    const deliveries = C.times(C.int(8, 14), (i) => ({ id: i + 1, event: C.pick(['order.created', 'user.updated', 'payment.captured', 'refund.issued', 'shipment.sent']), url: 'https://' + C.pick(C.COMPANY).toLowerCase().replace(/\W/g, '') + '.example/hook', status: C.pick([200, 200, 200, 500, 502, 200]), at: C.daysAgoISO(7) }))
+    router.get(base + '/deliveries', (q, s) => s.json(deliveries)); add('GET', base + '/deliveries', 'deliveries')
   } else if (kind === 'disclosure') {
-    router.get(base + '/changelog', (q, s) => s.json([{ v: '1.2.0', notes: 'new endpoints' }, { v: '1.1.0', notes: 'bugfixes' }])); add('GET', base + '/changelog', 'changelog')
-    router.get(base + '/health', (q, s) => s.json({ status: 'ok', uptime: seedNum })); add('GET', base + '/health', 'health')
+    const changelog = C.times(C.int(6, 10), (i) => ({ v: '1.' + (20 - i) + '.0', date: C.daysAgoISO(200 - i * 15), notes: C.sentence() }))
+    router.get(base + '/changelog', (q, s) => s.json(changelog)); add('GET', base + '/changelog', 'changelog')
+    router.get(base + '/health', (q, s) => s.json({ status: 'ok', uptime: seedNum, checks: { db: 'ok', cache: 'ok', queue: 'ok' } })); add('GET', base + '/health', 'health')
   } else if (kind === 'fileportal') {
-    router.get(base + '/files', (q, s) => s.json(['welcome.txt', 'readme.md', 'notes.txt'].map((n, i) => ({ name: n, size: 100 + i * 50 })))); add('GET', base + '/files', 'files')
-    router.get(base + '/recent', (q, s) => s.json([{ name: 'welcome.txt', at: 't-1' }])); add('GET', base + '/recent', 'recent')
+    const files = C.sample(C.FILES, C.int(8, 12)).map((n) => ({ name: n, size: C.int(1, 900) * 1024, modified: C.daysAgoISO(120) }))
+    router.get(base + '/files', (q, s) => s.json(files)); add('GET', base + '/files', 'files')
+    const recent = C.times(C.int(4, 7), (i) => ({ name: C.fileName(), at: C.daysAgoISO(10), by: C.fullName() }))
+    router.get(base + '/recent', (q, s) => s.json(recent)); add('GET', base + '/recent', 'recent')
   } else if (kind === 'adminreport') {
-    router.get(base + '/templates', (q, s) => s.json(['weekly', 'monthly', 'incident'].map((t, i) => ({ id: i + 1, name: t })))); add('GET', base + '/templates', 'templates')
-    router.get(base + '/schedule', (q, s) => s.json([{ id: 1, cron: '0 9 * * 1', report: 'weekly' }])); add('GET', base + '/schedule', 'schedule')
+    const templates = ['weekly', 'monthly', 'incident', 'quarterly', 'compliance', 'usage', 'churn'].map((t, i) => ({ id: i + 1, name: t, owner: C.fullName() }))
+    router.get(base + '/templates', (q, s) => s.json(templates)); add('GET', base + '/templates', 'templates')
+    const schedule = C.times(C.int(3, 6), (i) => ({ id: i + 1, cron: '0 ' + C.int(0, 23) + ' * * ' + C.int(0, 6), report: C.pick(['weekly', 'monthly', 'incident']) }))
+    router.get(base + '/schedule', (q, s) => s.json(schedule)); add('GET', base + '/schedule', 'schedule')
   } else if (kind === 'adminbackup') {
-    router.get(base + '/jobs', (q, s) => s.json([{ id: 1, name: 'nightly', status: 'ok' }, { id: 2, name: 'weekly', status: 'queued' }])); add('GET', base + '/jobs', 'jobs')
-    router.get(base + '/history', (q, s) => s.json([{ id: 1, at: 't-1', size: '4.2MB' }])); add('GET', base + '/history', 'history')
+    const jobs = C.times(C.int(6, 10), (i) => ({ id: i + 1, name: C.jobName(), status: C.pick(['ok', 'ok', 'queued', 'running', 'failed']), lastRun: C.daysAgoISO(7) }))
+    router.get(base + '/jobs', (q, s) => s.json(jobs)); add('GET', base + '/jobs', 'jobs')
+    const history = C.times(C.int(6, 12), (i) => ({ id: i + 1, at: C.daysAgoISO(30), size: (C.int(5, 90) / 10) + 'MB', ok: C.chance(0.9) }))
+    router.get(base + '/history', (q, s) => s.json(history)); add('GET', base + '/history', 'history')
   } else if (kind === 'import') {
-    router.get(base + '/history', (q, s) => s.json([{ id: 1, file: 'invoices.xml', rows: 12 }])); add('GET', base + '/history', 'history')
-    router.get(base + '/mappings', (q, s) => s.json([{ from: 'ref', to: 'reference' }, { from: 'amount', to: 'total' }])); add('GET', base + '/mappings', 'mappings')
+    const hist = C.times(C.int(6, 10), (i) => ({ id: i + 1, file: C.pick(['invoices', 'orders', 'catalog', 'partners']) + '-' + C.daysAgoISO(60) + '.xml', rows: C.int(5, 400), ok: C.chance(0.85) }))
+    router.get(base + '/history', (q, s) => s.json(hist)); add('GET', base + '/history', 'history')
+    const mappings = [['ref', 'reference'], ['amount', 'total'], ['cust', 'customer'], ['dt', 'date'], ['qty', 'quantity'], ['sku', 'productCode']].map(([a, b]) => ({ from: a, to: b }))
+    router.get(base + '/mappings', (q, s) => s.json(mappings)); add('GET', base + '/mappings', 'mappings')
   } else if (kind === 'adminupload') {
-    router.get(base + '/installed', (q, s) => s.json([{ name: 'core', version: '1.0' }, { name: 'analytics', version: '2.1' }])); add('GET', base + '/installed', 'installed')
+    const installed = C.times(C.int(4, 8), (i) => ({ name: C.pick(['core', 'analytics', 'billing', 'search', 'notifications', 'exporter', 'themes', 'audit']), version: C.int(1, 5) + '.' + C.int(0, 9) + '.' + C.int(0, 9), enabled: C.chance(0.8) }))
+    router.get(base + '/installed', (q, s) => s.json(installed)); add('GET', base + '/installed', 'installed')
   }
 }
 
@@ -526,6 +549,67 @@ function mountSide(x) {
   if (on('side-double-encoding')) { router.get(base + '/asset', (q, s) => { const p = String(q.query.path || 'welcome.txt'); const blocked = /\.\.\//.test(p); let dec = p; try { dec = decodeURIComponent(p) } catch { } const bypass = !blocked && /\.\.\//.test(dec); s.json({ path: p, decoded: dec, filterBlocked: blocked, traversalAfterDecode: bypass, note: bypass ? 'double-encoding bypassed the ../ filter' : 'ok' }) }); add('GET', base + '/asset', 'asset') }
   if (on('side-log-secrets')) { router.get(base + '/logs', (q, s) => { const v = variant('side-log-secrets') || 'token'; const secret = v === 'apikey' ? 'ak_live_9f8e7d6c5b4a3f2e' : 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4ifQ'; s.type('text/plain').send('[info] GET /api/orders 200\n[debug] upstream auth = ' + secret + '\n[info] worker 3 started\n') }); add('GET', base + '/logs', 'logs') }
   if (on('side-vuln-deps')) { router.get(base + '/deps', (q, s) => s.json({ dependencies: { lodash: '4.17.4', 'node-serialize': '0.0.4', minimist: '1.2.0', marked: '0.3.6', 'libxmljs2': '0.33.0' }, note: 'component versions with known CVEs' })); add('GET', base + '/deps', 'deps') }
+}
+
+// ---- PRE-AUTH (unauthenticated) RCE sinks — START -> RCE with NO admin gate. Each gated by placement. ----
+function mountUnauthRce(x) {
+  const { router, base, on, variant, add } = x
+  if (on('rce-ssti-public')) {
+    router.get(base + '/greet', (q, s) => { const t = q.query.name != null ? String(q.query.name) : 'Hi {{ 1+1 }}'; try { s.type('text/plain').send(evalRender(t, {})) } catch (e) { s.status(400).json({ error: e.message }) } })
+    add('GET', base + '/greet', 'greet')
+  }
+  if (on('rce-cmdi-public')) {
+    router.get(base + '/diag', (q, s) => {
+      const host = String(q.query.host || 'localhost')
+      try { s.type('text/plain').send(execSync('ping -c 1 ' + host, { timeout: 4000 }).toString()) }
+      catch (e) { s.type('text/plain').send(((e.stdout && e.stdout.toString()) || '') + ((e.stderr && e.stderr.toString()) || '') + e.message) }
+    })
+    add('GET', base + '/diag', 'diag')
+  }
+  if (on('rce-deserial-public')) {
+    router.post(base + '/preferences', (q, s) => {
+      try {
+        const raw = (q.body && q.body.prefs) || '{}'; const v = variant('rce-deserial-public') || 'node-serialize'
+        let o
+        if (v === 'funcster') { const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; o = parsed && parsed.__js_function ? { name: String(new Function('return (' + parsed.__js_function + ')()')()) } : parsed }
+        else o = serialize.unserialize(typeof raw === 'string' ? raw : JSON.stringify(raw))
+        s.json({ ok: true, result: String((o && o.name) || 'saved') })
+      } catch (e) { s.status(500).json({ error: e.message }) }
+    })
+    add('POST', base + '/preferences', 'preferences')
+  }
+  if (on('rce-upload-public')) {
+    router.post(base + '/avatar', (q, s) => {
+      const { filename, content } = q.body || {}
+      if (!filename) return s.status(400).json({ error: 'filename required' })
+      fs.mkdirSync(EXT_DIR, { recursive: true }); fs.writeFileSync(path.join(EXT_DIR, filename), content == null ? '' : String(content))
+      s.json({ ok: true, saved: filename })
+    })
+    add('POST', base + '/avatar', 'avatar')
+    router.post(base + '/avatar/:name/run', (q, s) => {
+      try { const full = path.join(EXT_DIR, q.params.name); const f = require.resolve(full); delete require.cache[f]; const m = require(f); const fn = typeof m === 'function' ? m : (m && m.run); s.json({ output: String(fn ? fn() : m) }) }
+      catch (e) { s.status(500).json({ error: e.message }) }
+    })
+    add('POST', base + '/avatar/:name/run', 'avatar-run')
+  }
+  // debug-auth — leftover debug route that hands you an admin credential (no auth)
+  if (on('debug-auth')) {
+    router.get(base + '/debug/whoami', (q, s) => {
+      const as = q.query.as || ADMIN_USER
+      const user = db.prepare('SELECT * FROM users WHERE username=?').get(as) || db.prepare("SELECT * FROM users WHERE role='admin' LIMIT 1").get()
+      const issued = x.__issue(s, user)
+      s.json(Object.assign({ debug: true, user: { username: user.username, role: user.role } }, issued))
+    })
+    add('GET', base + '/debug/whoami', 'debug-auth')
+  }
+  // log-creds — a public log route that leaked the admin's cleartext password (CWE-532)
+  if (on('log-creds')) {
+    router.get(base + '/logs/app', (q, s) => {
+      const admin = db.prepare("SELECT username,password FROM users WHERE role='admin' LIMIT 1").get()
+      s.type('text/plain').send('[info] boot ok\n[info] GET /account 200\n[debug] auth: POST /login user=' + admin.username + ' password=' + admin.password + ' -> 200\n[info] worker 2 ready\n')
+    })
+    add('GET', base + '/logs/app', 'log-creds')
+  }
 }
 
 function mountDeserial(x, requireAdmin) {

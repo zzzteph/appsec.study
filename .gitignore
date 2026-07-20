@@ -1,0 +1,22 @@
+# --- dependencies & build artifacts ---
+**/node_modules/
+**/dist/
+**/build/
+**/__pycache__/
+*.pyc
+
+# --- logs & local scratch/artifacts ---
+*.log
+**/*.log
+artifacts/
+**/artifacts/
+scratch/
+**/scratch/
+.DS_Store
+
+# --- internal build prompts / working docs (not part of the published machines) ---
+**/BUILD_PROMPTS.md
+**/*.prompt
+**/*.prompt.md
+prompts/
+**/prompts/

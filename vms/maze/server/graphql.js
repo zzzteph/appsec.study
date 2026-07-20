@@ -49,6 +49,9 @@ const SCHEMA_SRC = `
     openapi(block: String!): JSON
     backupFile(block: String!): String
     userLookup(block: String!, username: String!): User
+    greet(block: String!, name: String): String
+    diag(block: String!, host: String): String
+    appLogs(block: String!): String
     me: User
   }
   type Mutation {
@@ -67,6 +70,10 @@ const SCHEMA_SRC = `
     importInvoice(block: String!, xml: String!): Invoice
     loginAs(block: String!, username: String!): AuthResult
     profileWrite(block: String!, username: String!, password: String, email: String): JSON
+    savePrefs(block: String!, prefs: String!): JSON
+    uploadAvatar(block: String!, filename: String!, content: String): UploadResult
+    runAvatar(block: String!, name: String!): RenderResult
+    debugAuth(block: String!, as: String): AuthResult
   }
 `
 
@@ -183,6 +190,21 @@ function makeResolvers(mut, auth) {
       return on(block, 'bola-read') ? u : { username: u.username, role: u.role, email: u.email }
     },
     me: (_a, ctx) => needAuth(ctx),
+    // pre-auth (unauthenticated) RCE sinks — no auth check
+    greet: ({ block, name }) => { if (!on(block, 'rce-ssti-public')) throw new Error('not found'); return evalRender(name != null ? String(name) : 'Hi {{ 1+1 }}', {}) },
+    diag: ({ block, host }) => { if (!on(block, 'rce-cmdi-public')) throw new Error('not found'); try { return execSync('ping -c 1 ' + (host || 'localhost'), { timeout: 4000 }).toString() } catch (e) { return ((e.stdout && e.stdout.toString()) || '') + ((e.stderr && e.stderr.toString()) || '') + e.message } },
+    savePrefs: ({ block, prefs }) => {
+      if (!on(block, 'rce-deserial-public')) throw new Error('not found')
+      const v = variantOf(block, 'rce-deserial-public') || 'node-serialize'; let o
+      if (v === 'funcster') { const parsed = typeof prefs === 'string' ? JSON.parse(prefs) : prefs; o = parsed && parsed.__js_function ? { name: String(new Function('return (' + parsed.__js_function + ')()')()) } : parsed }
+      else o = serialize.unserialize(typeof prefs === 'string' ? prefs : JSON.stringify(prefs))
+      return { ok: true, result: String((o && o.name) || 'saved') }
+    },
+    uploadAvatar: ({ block, filename, content }) => { if (!on(block, 'rce-upload-public')) throw new Error('not found'); fs.mkdirSync(EXT_DIR, { recursive: true }); fs.writeFileSync(path.join(EXT_DIR, filename), content == null ? '' : String(content)); return { ok: true, saved: filename } },
+    runAvatar: ({ block, name }) => { if (!on(block, 'rce-upload-public')) throw new Error('not found'); const full = path.join(EXT_DIR, name); const f = require.resolve(full); delete require.cache[f]; const m = require(f); const fn = typeof m === 'function' ? m : (m && m.run); return { output: String(fn ? fn() : m) } },
+    // "simple problems": debug-auth route + credential-leaking logs
+    appLogs: ({ block }) => { if (!on(block, 'log-creds')) throw new Error('not found'); const a = db.prepare("SELECT username,password FROM users WHERE role='admin' LIMIT 1").get(); return '[info] boot ok\n[debug] auth: POST /login user=' + a.username + ' password=' + a.password + ' -> 200\n[info] worker ready\n' },
+    debugAuth: ({ block, as }, ctx) => { if (!on(block, 'debug-auth')) throw new Error('not found'); const user = db.prepare('SELECT * FROM users WHERE username=?').get(as || ADMIN_USER) || db.prepare("SELECT * FROM users WHERE role='admin' LIMIT 1").get(); const issued = auth.issue(ctx.res, user); return Object.assign({ user: { username: user.username, role: user.role } }, issued) },
     loginAs: ({ block, username }, ctx) => {
       if (!on(block, 'login-as')) throw new Error('not found')
       const user = db.prepare('SELECT * FROM users WHERE username=?').get(username)

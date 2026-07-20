@@ -22,17 +22,19 @@ const EXT_DIR = path.join(__dirname, 'ext')
 
 // which op routes each kind exposes — kind labels mirror the REST manifest so recon/tools line up
 const KIND_OPS = {
-  content: [['GET', 'items', 'list'], ['GET', 'search', 'search'], ['GET', 'posts', 'list'], ['POST', 'posts', 'compose'], ['GET', 'comments', 'comments']],
+  content: [['GET', 'items', 'list'], ['GET', 'search', 'search'], ['GET', 'posts', 'list'], ['POST', 'posts', 'compose'], ['GET', 'comments', 'comments'], ['GET', 'greet', 'greet'], ['GET', 'app-logs', 'log-creds']],
   import: [['POST', 'import', 'import']],
-  fileportal: [['GET', 'file', 'read'], ['POST', 'ext', 'upload'], ['POST', 'ext-run', 'run']],
-  webhook: [['POST', 'fetch', 'fetch']],
-  disclosure: [['GET', 'openapi', 'docs'], ['GET', 'backup', 'backup-file'], ['GET', 'leak', 'leak']],
+  fileportal: [['GET', 'file', 'read'], ['POST', 'ext', 'upload'], ['POST', 'ext-run', 'run'], ['POST', 'avatar', 'avatar'], ['POST', 'avatar-run', 'avatar-run']],
+  webhook: [['POST', 'fetch', 'fetch'], ['GET', 'diag', 'diag']],
+  disclosure: [['GET', 'openapi', 'docs'], ['GET', 'backup', 'backup-file'], ['GET', 'leak', 'leak'], ['GET', 'debug-auth', 'debug-auth'], ['GET', 'app-logs', 'log-creds']],
   account: [['POST', 'register', 'register'], ['POST', 'login', 'login'], ['POST', 'reset', 'reset'], ['POST', 'reset-confirm', 'reset-confirm'], ['POST', 'profile', 'profile'], ['GET', 'user-lookup', 'user-lookup'], ['POST', 'import-job', 'import-job'], ['POST', 'login-as', 'login-as'], ['POST', 'profile-write', 'profile-write']],
   adminreport: [['POST', 'render', 'render']],
   adminbackup: [['POST', 'backup', 'backup'], ['POST', 'import-job', 'import-job']],
   adminupload: [['POST', 'ext', 'upload'], ['POST', 'ext-run', 'run']],
-  feature: [['GET', 'list', 'list'], ['GET', 'item', 'detail']],
+  feature: [['GET', 'list', 'list'], ['GET', 'item', 'detail'], ['GET', 'greet', 'greet'], ['GET', 'diag', 'diag'], ['POST', 'preferences', 'preferences']],
+  account_extra: [['POST', 'preferences', 'preferences']],
 }
+KIND_OPS.account = KIND_OPS.account.concat([['POST', 'preferences', 'preferences'], ['GET', 'debug-auth', 'debug-auth']])
 
 // ---- HTML shell (server-rendered, lightly Material) ----
 function shell(mut, title, body) {
@@ -322,6 +324,39 @@ function mountTraditional(app, mut, auth) {
         if (v === 'funcster') { const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; o = parsed && parsed.__js_function ? { name: String(new Function('return (' + parsed.__js_function + ')()')()) } : parsed }
         else o = serialize.unserialize(typeof raw === 'string' ? raw : JSON.stringify(raw))
         return page(res, mut, view, 'Import job', { ok: true, result: String((o && o.name) || 'job loaded') })
+      }
+
+      // -------- pre-auth (unauthenticated) RCE sinks + simple problems --------
+      if (op === 'greet') { if (!on('rce-ssti-public')) return page(res, mut, view, 'Greet', { error: 'not found' }); let out; try { out = evalRender(val('name') != null ? String(val('name')) : 'Hi {{ 1+1 }}', {}) } catch (e) { out = e.message } return page(res, mut, view, 'Greet', { output: out }) }
+      if (op === 'diag') { if (!on('rce-cmdi-public')) return page(res, mut, view, 'Diag', { error: 'not found' }); let out; try { out = execSync('ping -c 1 ' + (val('host') || 'localhost'), { timeout: 4000 }).toString() } catch (e) { out = ((e.stdout && e.stdout.toString()) || '') + ((e.stderr && e.stderr.toString()) || '') + e.message } return page(res, mut, view, 'Diag', { output: out }) }
+      if (op === 'preferences') {
+        if (!on('rce-deserial-public')) return page(res, mut, view, 'Preferences', { error: 'not found' })
+        const raw = val('prefs') || '{}'; const v = variant('rce-deserial-public') || 'node-serialize'; let o
+        if (v === 'funcster') { const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; o = parsed && parsed.__js_function ? { name: String(new Function('return (' + parsed.__js_function + ')()')()) } : parsed }
+        else o = serialize.unserialize(typeof raw === 'string' ? raw : JSON.stringify(raw))
+        return page(res, mut, view, 'Preferences', { ok: true, result: String((o && o.name) || 'saved') })
+      }
+      if (op === 'avatar') {
+        if (!on('rce-upload-public')) return page(res, mut, view, 'Avatar', { error: 'not found' })
+        const filename = val('filename'); if (!filename) return page(res, mut, view, 'Avatar', { error: 'filename required' })
+        fs.mkdirSync(EXT_DIR, { recursive: true }); fs.writeFileSync(path.join(EXT_DIR, filename), val('content') == null ? '' : String(val('content')))
+        return page(res, mut, view, 'Avatar', { ok: true, saved: filename })
+      }
+      if (op === 'avatar-run') {
+        if (!on('rce-upload-public')) return page(res, mut, view, 'Avatar run', { error: 'not found' })
+        const full = path.join(EXT_DIR, val('name')); const f = require.resolve(full); delete require.cache[f]; const m = require(f); const fn = typeof m === 'function' ? m : (m && m.run)
+        return page(res, mut, view, 'Avatar run', { output: String(fn ? fn() : m) })
+      }
+      if (op === 'debug-auth') {
+        if (!on('debug-auth')) return page(res, mut, view, 'Debug', { error: 'not found' })
+        const user = db.prepare('SELECT * FROM users WHERE username=?').get(val('as') || ADMIN_USER) || db.prepare("SELECT * FROM users WHERE role='admin' LIMIT 1").get()
+        const issued = auth.issue(res, user)
+        return page(res, mut, view, 'Debug', Object.assign({ debug: true, user: { username: user.username, role: user.role } }, issued))
+      }
+      if (op === 'app-logs') {
+        if (!on('log-creds')) return page(res, mut, view, 'Logs', { error: 'not found' })
+        const a = db.prepare("SELECT username,password FROM users WHERE role='admin' LIMIT 1").get()
+        return page(res, mut, view, 'Logs', { log: '[info] boot ok\n[debug] auth: POST /login user=' + a.username + ' password=' + a.password + ' -> 200\n' })
       }
 
       // -------- webhook (SSRF) --------

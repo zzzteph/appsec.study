@@ -101,6 +101,19 @@ const PRIMITIVES = [
   { id: 'sink-upload', kind: 'sink', blocks: ofKind('fileportal').concat(ofKind('adminupload')), vuln: 'upload', variants: ['js-require', 'ejs-template'], req: [CAP.ADMIN], grants: [CAP.RCE], w: 0.4 },
   { id: 'sink-deserial', kind: 'sink', blocks: ofKind('adminbackup').concat(ofKind('account')), vuln: 'deserialization', variants: ['node-serialize', 'funcster'], req: [CAP.ADMIN], grants: [CAP.RCE], w: 0.3 },
 
+  // ---------- PRE-AUTH (unauthenticated) RCE sinks: START -> RCE with NO admin (hit a public endpoint) ----------
+  // Realistic Log4Shell-style bugs (boxcutter unauth /tools/dns + /greet, nomnom /notify/preview, unauth pickle).
+  { id: 'rce-ssti-public', kind: 'sink', blocks: ofKind('content').concat(ofKind('feature')), vuln: 'unauth-ssti', variants: ['greeting', 'preview'], req: [CAP.START], grants: [CAP.RCE], w: 0.18 },
+  { id: 'rce-cmdi-public', kind: 'sink', blocks: ofKind('webhook').concat(ofKind('feature')), vuln: 'unauth-cmdi', variants: ['diag-tool', 'lookup-tool'], req: [CAP.START], grants: [CAP.RCE], w: 0.16 },
+  { id: 'rce-deserial-public', kind: 'sink', blocks: ofKind('account').concat(ofKind('feature')), vuln: 'unauth-deserial', variants: ['node-serialize', 'funcster'], req: [CAP.START], grants: [CAP.RCE], w: 0.14 },
+  { id: 'rce-upload-public', kind: 'sink', blocks: ofKind('fileportal'), vuln: 'unauth-upload', variants: ['avatar'], req: [CAP.START], grants: [CAP.RCE], w: 0.14 },
+
+  // ---------- "simple problems": short, low-effort issues (not everything is a deep chain) ----------
+  // a leftover DEBUG route that hands you an admin credential with no auth (nomnom /auth-test-style)
+  { id: 'debug-auth', kind: 'auth', blocks: ofKind('account').concat(pubOfKind('disclosure')), vuln: 'debug-auth-endpoint', variants: ['whoami-as', 'token-mint', 'impersonate-header'], req: [CAP.START], grants: [CAP.ADMIN], w: 0.2 },
+  // a public LOG route that leaked the admin's cleartext password (CWE-532 sensitive-info-in-logs)
+  { id: 'log-creds', kind: 'acquire', blocks: pubOfKind('disclosure').concat(ofKind('content')), vuln: 'creds-in-logs', variants: ['app-log', 'access-log'], req: [CAP.START], grants: [CAP.ADMIN_CREDS], w: 0.2 },
+
   // ---------- side vulns (grant nothing toward RCE — discovery-only maze walls) ----------
   { id: 'side-idor', kind: 'side', blocks: ofKind('feature'), vuln: 'idor', variants: ['sequential', 'guessable-uuid'], req: [CAP.START], grants: [], w: 0.4 },
   { id: 'side-xss-stored', kind: 'side', blocks: ofKind('content'), vuln: 'stored-xss', variants: ['html', 'attr', 'js'], req: [CAP.START], grants: [], w: 0.45 },
@@ -185,6 +198,10 @@ function present(block) {
 function wpick(arr) { const t = arr.reduce((s, x) => s + x.w, 0); let r = RNG() * t; for (const x of arr) { if ((r -= x.w) <= 0) return x.v } return arr[arr.length - 1].v }
 function pick(a) { return a[Math.floor(RNG() * a.length)] }
 function shuffle(a) { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(RNG() * (i + 1));[a[i], a[j]] = [a[j], a[i]] } return a }
+// weighted shuffle — order producers by weighted-random draw (higher w earlier). Used when choosing the
+// guaranteed chain so LOW-weight primitives (e.g. pre-auth 1-step RCE) are picked as the solution only
+// occasionally, keeping most machines a real multi-step maze rather than a trivial unauth shortcut.
+function wshuffle(a) { a = [...a]; const out = []; while (a.length) { const tot = a.reduce((s, x) => s + (x.w || 0.1), 0); let r = RNG() * tot, idx = 0; for (let i = 0; i < a.length; i++) { if ((r -= (a[i].w || 0.1)) <= 0) { idx = i; break } } out.push(a.splice(idx, 1)[0]) } return out }
 
 // primitives available for the chosen axes
 function availableFor(api, auth) { return PRIMITIVES.filter(p => (!p.auth || p.auth.includes(auth)) && (!p.api || p.api.includes(api))) }
@@ -227,7 +244,7 @@ function randomBackward(prims) {
   function need(cap, depth) {
     if (cap === CAP.START) return true
     if (depth > 6) return false
-    for (const p of shuffle(producersOf(cap))) {
+    for (const p of wshuffle(producersOf(cap))) {
       if (visiting.has(p.id)) continue
       visiting.add(p.id)
       let ok = true
@@ -289,8 +306,12 @@ function generate(opts = {}) {
   //    function of the seed, and ADDING instances can never reduce reachability, so the guarantee holds.
   const placedKey = new Set(placements.map(pl => pl.block + '|' + pl.prim))
   const GLOBAL_AUTH = new Set(['jwt-forge', 'jwt-algnone', 'jwt-weak-secret', 'session-predict', 'session-file', 'apikey-leak', 'remember-me'])
+  // pre-auth 1-step shortcuts must NOT be sprayed as decoy noise (that would trivialise every machine);
+  // they appear ONLY when force-enabled as the guaranteed chain, so most machines stay a real maze.
+  const NOISE_EXCLUDE = new Set(['rce-ssti-public', 'rce-cmdi-public', 'rce-deserial-public', 'rce-upload-public', 'debug-auth', 'log-creds'])
   const spreadOf = (p) => GLOBAL_AUTH.has(p.id) ? 1 : (p.kind === 'side' ? 7 : (p.kind === 'acquire' || p.kind === 'sink' ? 5 : 3))
   for (const p of shuffle(avail)) {
+    if (NOISE_EXCLUDE.has(p.id)) continue
     const hosts = shuffle(p.blocks.filter(b => active.has(b) && !placedKey.has(b + '|' + p.id)))
     if (!hosts.length) continue
     const cap = spreadOf(p)
