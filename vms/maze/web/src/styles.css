@@ -1,0 +1,190 @@
+/* Material-Design-flavoured, responsive. Indigo primary + pink accent, Roboto, elevation. */
+:root {
+  --primary: #3f51b5; --primary-d: #303f9f; --accent: #ff4081;
+  --bg: #f4f5f7; --surface: #fff; --ink: #212121; --muted: #6b7280; --line: #e4e7ec;
+  --e1: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.24);
+  --e2: 0 3px 6px rgba(0,0,0,.16), 0 3px 6px rgba(0,0,0,.10);
+  --e3: 0 10px 20px rgba(0,0,0,.15), 0 6px 6px rgba(0,0,0,.10);
+  --drawer-w: 280px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: Roboto, 'Segoe UI', system-ui, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: var(--primary); text-decoration: none; cursor: pointer; }
+img { max-width: 100%; display: block; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1rem 0; }
+
+/* ---- shell layout ---- */
+.shell { min-height: 100vh; }
+.appbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: .5rem; height: 56px; padding: 0 .8rem; background: var(--primary); color: #fff; box-shadow: var(--e2); }
+.appbar .brand { display: flex; align-items: center; gap: .5rem; font-size: 1.25rem; font-weight: 500; letter-spacing: .3px; }
+.appbar .brand .logo { font-size: 1.35rem; }
+.appbar .chip.gen { background: rgba(255,255,255,.18); color: #fff; margin-left: .5rem; }
+.appbar .spacer { flex: 1; }
+.hamburger { background: none; border: 0; color: #fff; font-size: 1.5rem; cursor: pointer; padding: .2rem .4rem; }
+
+/* ---- drawer ---- */
+.drawer { position: fixed; top: 56px; left: 0; bottom: 0; width: var(--drawer-w); background: #fff; z-index: 25; box-shadow: var(--e2); overflow-y: auto; padding-bottom: 1rem; transform: translateX(-100%); transition: transform .18s ease; }
+.drawer.open { transform: translateX(0); }
+.drawer .dh { padding: 1rem 1.2rem; background: var(--primary); color: #fff; font-size: 1.2rem; font-weight: 500; display: none; }
+.drawer-search { padding: .6rem .8rem; }
+.drawer-section { margin-bottom: .5rem; }
+.drawer-section .dgh { padding: .5rem .8rem; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; }
+.drawer a { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; padding: .55rem 1rem; color: var(--ink); font-size: .9rem; }
+.drawer a:hover { background: #f4f5fb; }
+.drawer a.on { background: #eef0fb; color: var(--primary); font-weight: 500; border-right: 3px solid var(--accent); }
+.drawer .d-slug { font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-size: .7rem; }
+.scrim { position: fixed; inset: 0 0 0 0; top: 56px; background: rgba(0,0,0,.4); z-index: 20; }
+
+main { padding: 1rem 1rem 4rem; margin-left: 0; max-width: 100%; }
+
+@media (min-width: 900px) {
+  .drawer { transform: translateX(0); }
+  .hamburger { display: none; }
+  .scrim { display: none; }
+  main { margin-left: var(--drawer-w); padding: 1.4rem 1.6rem 4rem; }
+}
+
+.loading { padding: 3rem; text-align: center; }
+
+/* ---- shared building blocks ---- */
+.section-title { font-weight: 500; font-size: 1.35rem; color: #303f9f; margin: .4rem 0 1rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.card { background: var(--surface); border-radius: 8px; box-shadow: var(--e1); overflow: hidden; }
+.pad { padding: 1rem 1.2rem; }
+.muted { color: var(--muted); }
+.chip { display: inline-block; padding: .12rem .6rem; border-radius: 999px; font-size: .72rem; background: #e8eaf6; color: #3949ab; margin-right: .25rem; }
+.chip.cat { background: #e0f2f1; color: #00695c; }
+.chip.admin { background: #ffe0b2; color: #e65100; }
+.stars { color: #ffb300; letter-spacing: 1px; font-size: .85rem; }
+.btn { background: var(--primary); color: #fff; border: 0; border-radius: 4px; padding: .5rem 1rem; font: inherit; font-size: .85rem; font-weight: 500; text-transform: uppercase; letter-spacing: .4px; cursor: pointer; box-shadow: var(--e1); }
+.btn:hover { background: var(--primary-d); }
+.btn.flat { background: transparent; color: var(--primary); box-shadow: none; }
+.btn.accent { background: var(--accent); }
+.btn.accent:hover { background: #f50057; }
+.btn:disabled { opacity: .5; cursor: default; }
+input, textarea, select { font: inherit; }
+.field { width: 100%; padding: .55rem .65rem; border: 1px solid #cfd4dc; border-radius: 6px; background: #fafbfc; margin: .25rem 0; }
+.field:focus { outline: 2px solid rgba(63,81,181,.35); border-color: var(--primary); }
+label.lbl { display: block; font-size: .78rem; color: var(--muted); margin-top: .5rem; }
+.err { color: #c62828; font-size: .85rem; white-space: pre-wrap; }
+pre.out { background: #263238; color: #eceff1; padding: .7rem; border-radius: 6px; overflow-x: auto; font-size: .78rem; max-height: 320px; }
+
+/* ---- hero ---- */
+.hero { position: relative; border-radius: 10px; overflow: hidden; box-shadow: var(--e2); color: #fff; margin: .5rem 0 1rem; }
+.hero img { width: 100%; height: 260px; object-fit: cover; filter: brightness(.6); }
+.hero .cap { position: absolute; left: 0; bottom: 0; padding: 1.4rem 1.6rem; }
+.hero h1 { margin: 0 0 .3rem; font-weight: 500; font-size: 2rem; }
+.hero p { margin: 0; opacity: .95; max-width: 620px; }
+
+/* ---- product grid ---- */
+.grid { display: grid; gap: 1rem; }
+.grid.products { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.grid.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.product .thumb { height: 150px; background: #eceff1; }
+.product .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.product .body { padding: .7rem .8rem; }
+.product .name { font-weight: 500; }
+.product .row { display: flex; align-items: center; justify-content: space-between; margin-top: .35rem; }
+.price { font-weight: 700; color: #263238; }
+.tile img { width: 100%; height: 140px; object-fit: cover; }
+
+/* ---- feed ---- */
+.feed { display: grid; grid-template-columns: 280px 1fr; gap: 1.2rem; align-items: start; }
+.post { margin-bottom: 1rem; }
+.post .head { display: flex; align-items: center; gap: .6rem; padding: .8rem 1rem 0; }
+.post .head img { width: 40px; height: 40px; border-radius: 50%; }
+.post .who { font-weight: 500; line-height: 1.1; }
+.post .body { padding: .6rem 1rem; }
+.post .photo img { width: 100%; max-height: 340px; object-fit: cover; }
+.post .actions { display: flex; gap: 1.2rem; padding: .5rem 1rem .8rem; color: var(--muted); font-size: .85rem; }
+.avatar-lg { width: 72px; height: 72px; border-radius: 50%; }
+
+/* ---- tables / admin ---- */
+.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 1rem; }
+.metric { padding: 1rem 1.1rem; }
+.metric .n { font-size: 1.8rem; font-weight: 500; color: var(--primary); }
+.metric .l { color: var(--muted); font-size: .85rem; }
+table.data { width: 100%; border-collapse: collapse; }
+table.data th, table.data td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); font-size: .9rem; }
+table.data th { color: var(--muted); font-weight: 500; }
+table.data tr:hover td { background: #f7f9fc; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap: 1rem; }
+
+/* ---- tabs inside views ---- */
+.subtabs { display: flex; gap: .3rem; flex-wrap: wrap; margin-bottom: .8rem; }
+.subtabs button { border: 0; background: #e8eaf6; color: #3949ab; padding: .4rem .8rem; border-radius: 999px; cursor: pointer; font: inherit; font-size: .85rem; }
+.subtabs button.on { background: var(--primary); color: #fff; }
+
+.mono { font-family: ui-monospace, Menlo, monospace; }
+
+/* ---- responsive ---- */
+@media (max-width: 860px) {
+  .feed { grid-template-columns: 1fr; }
+  .feed .rail { order: 2; }
+}
+
+/* ============================================================================
+   SKINS — 16 Material palettes scoped to a block root (`.block.skin-<id>`). The app chrome
+   (appbar/drawer) keeps the default indigo :root; only block CONTENT is re-skinned, and the skin is a
+   pure function of the view identity (never of the vulns inside), so appearance stays decoupled.
+   ============================================================================ */
+:root { --accent-soft: #fce4ec; }
+.block { --primary: #3f51b5; --primary-d: #303f9f; --accent: #ff4081; --accent-soft: #fce4ec; }
+.skin-indigo  { --primary:#3f51b5; --primary-d:#303f9f; --accent:#ff4081; --accent-soft:#fce4ec; }
+.skin-teal    { --primary:#00897b; --primary-d:#00695c; --accent:#ff7043; --accent-soft:#ffe0d6; }
+.skin-rose    { --primary:#e91e63; --primary-d:#c2185b; --accent:#7c4dff; --accent-soft:#ede7f6; }
+.skin-amber   { --primary:#ff8f00; --primary-d:#ff6f00; --accent:#6d4c41; --accent-soft:#efebe9; }
+.skin-slate   { --primary:#455a64; --primary-d:#37474f; --accent:#26a69a; --accent-soft:#d7f2ee; }
+.skin-emerald { --primary:#2e7d32; --primary-d:#1b5e20; --accent:#ffb300; --accent-soft:#fff3d6; }
+.skin-violet  { --primary:#6a1b9a; --primary-d:#4a148c; --accent:#26c6da; --accent-soft:#d6f5fa; }
+.skin-crimson { --primary:#c62828; --primary-d:#b71c1c; --accent:#ff8f00; --accent-soft:#ffecc7; }
+.skin-ocean   { --primary:#0277bd; --primary-d:#01579b; --accent:#26a69a; --accent-soft:#d3efeb; }
+.skin-forest  { --primary:#33691e; --primary-d:#1b5e20; --accent:#ff7043; --accent-soft:#ffe0d6; }
+.skin-sunset  { --primary:#ef6c00; --primary-d:#e65100; --accent:#d81b60; --accent-soft:#fbd6e4; }
+.skin-mono    { --primary:#424242; --primary-d:#212121; --accent:#757575; --accent-soft:#eeeeee; }
+.skin-midnight{ --primary:#283593; --primary-d:#1a237e; --accent:#00b0ff; --accent-soft:#cdefff; }
+.skin-coral   { --primary:#ff5252; --primary-d:#ff1744; --accent:#536dfe; --accent-soft:#e2e6ff; }
+.skin-steel   { --primary:#546e7a; --primary-d:#37474f; --accent:#90a4ae; --accent-soft:#eceff1; }
+.skin-lime    { --primary:#689f38; --primary-d:#558b2f; --accent:#f4511e; --accent-soft:#ffe0d6; }
+.block .section-title { color: var(--primary-d); }
+
+/* ============================================================================
+   WIDGETS — 12 collection render styles. Any collection wrapped in `.coll <widget>` responds; the
+   template drops its items as direct children and the widget decides the arrangement.
+   ============================================================================ */
+.coll { display: grid; gap: 1rem; }
+.coll.cards   { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.coll.grid    { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .8rem; }
+.coll.gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
+.coll.tiles   { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.coll.list    { display: block; }
+.coll.list > * { display: block; margin-bottom: .5rem; }
+.coll.compact { display: block; }
+.coll.compact > * { display: flex; align-items: center; gap: .5rem; padding: .35rem .6rem; border-bottom: 1px solid var(--line); }
+.coll.feed    { display: block; max-width: 640px; margin: 0 auto; }
+.coll.feed > * { display: block; margin-bottom: 1rem; }
+.coll.table   { display: table; width: 100%; }
+.coll.table > * { display: table-row; }
+.coll.masonry { display: block; column-count: 3; column-gap: 1rem; }
+.coll.masonry > * { break-inside: avoid; margin-bottom: 1rem; display: block; }
+.coll.carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .5rem; }
+.coll.carousel > * { flex: 0 0 220px; scroll-snap-align: start; }
+.coll.kanban  { display: flex; gap: 1rem; overflow-x: auto; align-items: flex-start; }
+.coll.kanban > * { flex: 0 0 240px; }
+.coll.timeline { display: block; border-left: 3px solid var(--accent); padding-left: 1rem; margin-left: .5rem; }
+.coll.timeline > * { display: block; position: relative; margin-bottom: 1rem; }
+.coll.timeline > *::before { content: ''; position: absolute; left: -1.42rem; top: .6rem; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+@media (max-width: 800px) { .coll.masonry { column-count: 2; } }
+@media (max-width: 520px) { .coll.masonry { column-count: 1; } }
+
+/* buttons/accents re-read the skin vars automatically since they use var(--primary/--accent) */
+.chip.kick { background: var(--accent-soft); color: var(--primary-d); }
+
+/* ---- block library (Lego pieces composed into a page) ---- */
+.page { }
+.blk { }
+.blk-h { font-weight: 600; color: var(--primary-d); font-size: 1.05rem; margin-bottom: .6rem; display: flex; align-items: center; gap: .5rem; }
+.blk .row { display: flex; gap: .5rem; align-items: center; margin: .5rem 0; flex-wrap: wrap; }
+.blk .compose { margin-bottom: 1rem; }
+.blk textarea.mono, .blk input.mono { font-family: ui-monospace, Menlo, monospace; font-size: .82rem; }
+.coll .card.prod { overflow: hidden; }

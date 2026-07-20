@@ -1,0 +1,4 @@
+Welcome to maze.
+
+This portal changes shape. The set of available features — and the weaknesses in them — is
+regenerated whenever an operator presses "Mutate". Map what is live right now, then find a way through.
