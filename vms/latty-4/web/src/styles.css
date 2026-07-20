@@ -1,0 +1,29 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, sans-serif; background: #f4f5fb; color: #1e2233; }
+header { display: flex; align-items: center; gap: 1.2rem; padding: 0.9rem 1.5rem; background: #fff; border-bottom: 1px solid #e2e4f0; }
+.brand { font-size: 1.35rem; font-weight: 800; }
+.brand .p { color: #5b21b6; }
+nav { display: flex; gap: 1rem; align-items: center; }
+nav a { cursor: pointer; color: #5a6072; }
+nav a.on { color: #5b21b6; border-bottom: 2px solid #5b21b6; padding-bottom: 2px; }
+.who { margin-left: auto; color: #7c8395; font-size: 0.9rem; }
+.who a { color: #5b21b6; }
+main { max-width: 720px; margin: 1.5rem auto; padding: 0 1.25rem; }
+.card { background: #fff; border: 1px solid #e2e4f0; border-radius: 8px; padding: 1.2rem 1.4rem; margin-bottom: 1.1rem; }
+.narrow { max-width: 340px; margin: 3rem auto; }
+h2, h3 { margin: 0.2rem 0 0.6rem; }
+.muted { color: #7c8395; font-size: 0.9rem; }
+.err { color: #c0362c; }
+input, textarea { width: 100%; padding: 0.55rem; border: 1px solid #cdd1e4; border-radius: 6px; background: #fbfcff; color: inherit; font: inherit; margin: 0.3rem 0; }
+textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+button { background: #5b21b6; color: #fff; border: 0; border-radius: 6px; padding: 0.55rem 1.1rem; cursor: pointer; margin-top: 0.3rem; }
+label { display: block; margin-top: 0.5rem; font-size: 0.8rem; color: #7c8395; }
+code { background: #efe9fb; padding: 0.1rem 0.35rem; border-radius: 4px; }
+.key { word-break: break-all; }
+.plist { list-style: none; padding: 0; margin: 0.4rem 0; }
+.plist li { padding: 0.55rem 0.7rem; border: 1px solid #eef0f8; border-radius: 6px; margin-bottom: 0.4rem; cursor: pointer; }
+.plist li:hover { border-color: #c4b5e8; }
+.row { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+.row input { margin: 0; }
+.out { background: #17132a; color: #ede9fe; padding: 0.8rem; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-size: 0.82rem; }

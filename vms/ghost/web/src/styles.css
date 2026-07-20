@@ -1,0 +1,30 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, sans-serif; background: #0f1420; color: #e7ebf3; }
+nav { display: flex; gap: 0.75rem; align-items: center; padding: 0.8rem 1.25rem; background: #161d2e; border-bottom: 1px solid #26304a; }
+nav .brand { font-weight: 800; font-size: 1.15rem; }
+nav .tag { color: #8b94a9; font-size: 0.9rem; }
+nav .right { margin-left: auto; color: #7dd3fc; text-decoration: none; }
+.login { max-width: 380px; margin: 3rem auto; }
+.card { background: #161d2e; border: 1px solid #26304a; border-radius: 12px; padding: 1.1rem; }
+h1, h2, h3 { color: #f3f6fc; }
+.muted { color: #8b94a9; font-size: 0.9rem; }
+.err { color: #fca5a5; }
+input { width: 100%; padding: 0.5rem; margin: 0.25rem 0; border: 1px solid #2c3752; border-radius: 8px; background: #0f1420; color: inherit; font: inherit; }
+button { background: #2563eb; color: #fff; border: 0; border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer; margin-right: 0.35rem; }
+.dash { max-width: 940px; margin: 1.25rem auto; padding: 0 1.25rem; }
+.shophead { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.tabs { margin-left: auto; }
+.tabs button { background: #1d2740; }
+.tabs button.on { background: #2563eb; }
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #222c44; font-size: 0.92rem; }
+td input { margin: 0; }
+.card.add { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.card.add input { width: auto; flex: 1; }
+.card.big { text-align: center; margin-top: 1.5rem; }
+.card.big h1 { font-size: 2.5rem; margin: 0.2rem 0; color: #4ade80; }
+.st { padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; }
+.st-pending { background: #7c5b12; } .st-approved { background: #1e5aa8; } .st-delivering { background: #6d28d9; }
+.st-delivered { background: #15803d; } .st-declined { background: #9f1239; }
+.flash { color: #7dd3fc; }

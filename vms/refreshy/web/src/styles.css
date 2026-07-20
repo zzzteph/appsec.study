@@ -1,0 +1,23 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, sans-serif; background: #f4f5fb; color: #1c1e26; }
+nav { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 1.25rem; background: #0ea5e9; color: #fff; }
+nav .brand { font-weight: 800; font-size: 1.15rem; margin-right: auto; color: #fff; text-decoration: none; }
+nav a { color: #fff; text-decoration: none; }
+nav a:hover { text-decoration: underline; }
+nav .who { opacity: 0.9; }
+.wrap { max-width: 640px; margin: 1.25rem auto; padding: 0 1rem; }
+.card { background: #fff; border: 1px solid #e6e6ef; border-radius: 12px; padding: 0.9rem; margin: 0.7rem 0; }
+.card.new { border-color: #bae6fd; }
+h1, h3 { color: #10222e; }
+.byline, .muted { color: #7b8494; font-size: 0.9rem; }
+.body { line-height: 1.55; margin: 0.4rem 0; }
+.row { display: flex; gap: 0.5rem; align-items: center; margin: 0.4rem 0; flex-wrap: wrap; }
+input, textarea { width: 100%; padding: 0.5rem; border: 1px solid #d7d9e3; border-radius: 8px; margin: 0.2rem 0; font: inherit; background: #fff; color: inherit; }
+textarea { min-height: 64px; }
+button { background: #0ea5e9; color: #fff; border: 0; border-radius: 8px; padding: 0.45rem 0.9rem; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.comments { border-top: 1px solid #eef0f6; margin-top: 0.5rem; padding-top: 0.5rem; }
+.comment { font-size: 0.92rem; margin: 0.25rem 0; }
+.flash { max-width: 640px; margin: 0.5rem auto 0; padding: 0.4rem 1rem; color: #0369a1; }
+a { color: #0ea5e9; }

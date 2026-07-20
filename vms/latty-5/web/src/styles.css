@@ -1,0 +1,27 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, sans-serif; background: #f6f7f4; color: #232821; }
+header { display: flex; align-items: center; gap: 1.2rem; padding: 0.9rem 1.5rem; background: #fff; border-bottom: 1px solid #e2e5dd; }
+.brand { font-size: 1.35rem; font-weight: 800; }
+.brand .d { color: #2f7d4f; }
+nav { display: flex; gap: 1rem; }
+nav a { cursor: pointer; color: #5c6357; }
+nav a.on { color: #2f7d4f; border-bottom: 2px solid #2f7d4f; padding-bottom: 2px; }
+main { max-width: 760px; margin: 1.5rem auto; padding: 0 1.25rem; }
+.card { background: #fff; border: 1px solid #e2e5dd; border-radius: 8px; padding: 1.2rem 1.4rem; }
+h2 { margin: 0.2rem 0 0.6rem; }
+.muted { color: #6f7568; font-size: 0.9rem; }
+.err { color: #b23b2e; }
+input, textarea { width: 100%; padding: 0.55rem; border: 1px solid #cdd2c6; border-radius: 6px; background: #fbfcf9; color: inherit; font: inherit; margin: 0.3rem 0; }
+textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+button { background: #2f7d4f; color: #fff; border: 0; border-radius: 6px; padding: 0.5rem 1rem; cursor: pointer; margin-top: 0.3rem; }
+button.ghost { background: transparent; color: #2f7d4f; border: 1px solid #b9d3c3; }
+button.mini { padding: 0.2rem 0.6rem; margin: 0; font-size: 0.8rem; }
+label { display: block; margin-top: 0.5rem; font-size: 0.8rem; color: #6f7568; }
+.row { display: flex; gap: 0.5rem; }
+.row input { margin: 0; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 0.4rem; }
+@media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+.elist { list-style: none; padding: 0; margin: 0.3rem 0; }
+.elist li { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.6rem; border: 1px solid #eef0ea; border-radius: 6px; margin-bottom: 0.35rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+.doc { background: #14201a; color: #d9f0e3; padding: 0.9rem; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; font-size: 0.83rem; }

@@ -45,6 +45,7 @@ function mountAll(router, mut, auth) {
     const ctx = { router, base, on, variant, add, requireAdmin, requireAuth, store, view, __issue: (res, user) => auth.issue(res, user), __adminKey: () => auth.ADMIN_KEYFN() }
     ;(MOUNT[kind] || MOUNT.feature)(ctx)
     mountExtras(ctx, kind)
+    mountSide(ctx)
   }
   return funcs
 }
@@ -275,6 +276,28 @@ const MOUNT = {
       s.json(on('bola-read') ? u : { username: u.username, role: u.role, email: u.email })
     })
     add('GET', base + '/users/:username', 'user-lookup')
+    // login-as / impersonation — mints a credential for ANY username with no admin check
+    if (on('login-as')) {
+      router.post(base + '/login-as', (q, s) => {
+        const un = (q.body && q.body.username) || ADMIN_USER
+        const user = db.prepare('SELECT * FROM users WHERE username=?').get(un)
+        if (!user) return s.status(404).json({ error: 'no such user' })
+        const issued = auth_issue(x, s, user)
+        s.json(Object.assign({ user: { username: user.username, role: user.role } }, issued))
+      })
+      add('POST', base + '/login-as', 'login-as')
+    }
+    // BOLA write — trusts an attacker-supplied username and writes ANY user's record (set admin's pw)
+    if (on('bola-write')) {
+      router.post(base + '/profile-write', requireAuth, (q, s) => {
+        const { username, password, email } = q.body || {}
+        if (!username) return s.status(400).json({ error: 'username required' })
+        if (password != null) db.prepare('UPDATE users SET password=? WHERE username=?').run(password, username)
+        if (email != null) db.prepare('UPDATE users SET email=? WHERE username=?').run(email, username)
+        s.json({ ok: true, updated: username })
+      })
+      add('POST', base + '/profile-write', 'profile-write')
+    }
     if (on('sink-deserial')) mountDeserial(x, requireAdmin)
   },
 
@@ -467,6 +490,34 @@ function mountExtras(x, kind) {
   } else if (kind === 'adminupload') {
     router.get(base + '/installed', (q, s) => s.json([{ name: 'core', version: '1.0' }, { name: 'analytics', version: '2.1' }])); add('GET', base + '/installed', 'installed')
   }
+}
+
+// ---- fleet-audit side vulns (maze walls; grant nothing toward RCE). Each gated by its placement. ----
+function mountSide(x) {
+  const { router, base, on, variant, add, requireAuth } = x
+  if (on('side-cors')) { router.get(base + '/cors-data', (q, s) => { s.setHeader('Access-Control-Allow-Origin', q.headers.origin || '*'); s.setHeader('Access-Control-Allow-Credentials', 'true'); s.json({ data: 'sensitive', user: 'demo' }) }); add('GET', base + '/cors-data', 'cors-data') }
+  if (on('side-host-header')) { router.post(base + '/pw-reset-link', (q, s) => s.json({ link: 'https://' + (q.headers.host || 'app') + '/reset?token=abc' })); add('POST', base + '/pw-reset-link', 'reset-link') }
+  if (on('side-cache-poison')) { router.get(base + '/client-config', (q, s) => { s.setHeader('Cache-Control', 'public, max-age=300'); s.json({ apiBase: 'https://' + (q.headers['x-forwarded-host'] || q.headers.host || 'app') + '/api' }) }); add('GET', base + '/client-config', 'client-config') }
+  if (on('side-cookie-flags')) { router.post(base + '/remember-weak', (q, s) => { s.setHeader('Set-Cookie', 'remember=' + ((q.body && q.body.username) || 'x') + '; Path=/'); s.json({ ok: true }) }); add('POST', base + '/remember-weak', 'remember-weak') }
+  if (on('side-clickjack')) { router.get(base + '/embed', (q, s) => s.type('html').send('<h1>Account actions</h1><button>Delete account</button>')); add('GET', base + '/embed', 'embed') }
+  if (on('side-email-header')) { router.post(base + '/contact', (q, s) => s.json({ ok: true, headers: 'From: ' + ((q.body && q.body.name) || '') })); add('POST', base + '/contact', 'contact') }
+  if (on('side-redos')) { router.get(base + '/validate', (q, s) => { const e = String(q.query.email || ''); try { /^([a-zA-Z0-9]+)+@example\.com$/.test(e.slice(0, 40)) } catch { } s.json({ valid: /@/.test(e) }) }); add('GET', base + '/validate', 'validate') }
+  if (on('side-csrf')) { router.get(base + '/set-email', (q, s) => s.json({ ok: true, email: q.query.email || '' })); add('GET', base + '/set-email', 'set-email') }
+  if (on('side-xpath')) { router.get(base + '/staff', (q, s) => { const all = /'|\)/.test(String(q.query.name || '')); s.json({ staff: all ? ['alice', 'bob', 'admin'] : ['alice'] }) }); add('GET', base + '/staff', 'staff') }
+  if (on('side-ldap')) { router.get(base + '/directory', (q, s) => { const all = /\*|\)\(/.test(String(q.query.user || '')); s.json({ users: all ? ['alice', 'bob', 'admin'] : [] }) }); add('GET', base + '/directory', 'directory') }
+  if (on('side-nosql')) { router.post(base + '/nlogin', (q, s) => { const bypass = q.body && typeof q.body.password === 'object'; s.json({ ok: !!bypass, note: bypass ? 'operator accepted' : 'invalid' }) }); add('POST', base + '/nlogin', 'nlogin') }
+  if (on('side-excessive-data')) { router.get(base + '/cards', (q, s) => s.json([{ brand: 'visa', pan: '4111111111111111', cvv: '123', holder: 'alice' }])); add('GET', base + '/cards', 'cards') }
+  if (on('side-cms-unauth')) { router.put(base + '/article/:slug', (q, s) => s.json({ ok: true, slug: q.params.slug, body: (q.body && q.body.body) || '' })); add('PUT', base + '/article/:slug', 'article') }
+  if (on('side-privesc-self')) { router.post(base + '/become-seller', requireAuth, (q, s) => { db.prepare("UPDATE users SET role='seller' WHERE username=?").run(q.user.username); s.json({ ok: true, role: 'seller' }) }); add('POST', base + '/become-seller', 'become-seller') }
+  if (on('side-refund-abuse')) { router.post(base + '/refund', (q, s) => s.json({ ok: true, credited: Number((q.body && q.body.amount) || 0) })); add('POST', base + '/refund', 'refund') }
+  if (on('side-status-abuse')) { router.post(base + '/order-status', (q, s) => s.json({ ok: true, status: (q.body && q.body.status) || 'delivered' })); add('POST', base + '/order-status', 'order-status') }
+  if (on('side-race')) { let seen = false; router.post(base + '/redeem', (q, s) => { seen = true; s.json({ ok: true, credit: 5 }) }); add('POST', base + '/redeem', 'redeem') }
+  if (on('side-giftcard-enum')) { router.get(base + '/giftcard/:code', (q, s) => s.json({ code: q.params.code, balance: 25 })); add('GET', base + '/giftcard/:code', 'giftcard') }
+  if (on('side-credit-transfer')) { router.post(base + '/transfer', (q, s) => s.json({ ok: true, amount: Number((q.body && q.body.amount) || 0) })); add('POST', base + '/transfer', 'transfer') }
+  if (on('side-predictable-apikey')) { router.post(base + '/apikey', (q, s) => s.json({ apikey: 'ak_' + Buffer.from(String((q.body && q.body.username) || 'user')).toString('hex') })); add('POST', base + '/apikey', 'apikey') }
+  if (on('side-dom-xss')) { router.get(base + '/widget', (q, s) => s.type('html').send('<div id="o"></div><script>document.getElementById("o").innerHTML=decodeURIComponent((location.search.split("q=")[1]||""))</script>')); add('GET', base + '/widget', 'widget') }
+  if (on('side-rfi')) { router.get(base + '/include', async (q, s) => { const u = String(q.query.page || ''); if (/^https?:/i.test(u)) { try { const r = await fetch(u); return s.type('text/plain').send(await r.text()) } catch (e) { return s.status(502).json({ error: e.message }) } } s.json({ page: u }) }); add('GET', base + '/include', 'include') }
+  if (on('side-header-trust')) { router.get(base + '/admin-metrics', (q, s) => { const v = variant('side-header-trust') || 'x-admin'; const ok = v === 'x-admin' ? (q.headers['x-admin'] === 'true') : (q.headers['x-forwarded-for'] === '127.0.0.1'); return ok ? s.json({ metrics: { users: 42, revenue: 1000 } }) : s.status(403).json({ error: 'forbidden' }) }); add('GET', base + '/admin-metrics', 'admin-metrics') }
 }
 
 function mountDeserial(x, requireAdmin) {

@@ -27,7 +27,7 @@ const KIND_OPS = {
   fileportal: [['GET', 'file', 'read'], ['POST', 'ext', 'upload'], ['POST', 'ext-run', 'run']],
   webhook: [['POST', 'fetch', 'fetch']],
   disclosure: [['GET', 'openapi', 'docs'], ['GET', 'backup', 'backup-file'], ['GET', 'leak', 'leak']],
-  account: [['POST', 'register', 'register'], ['POST', 'login', 'login'], ['POST', 'reset', 'reset'], ['POST', 'reset-confirm', 'reset-confirm'], ['POST', 'profile', 'profile'], ['GET', 'user-lookup', 'user-lookup'], ['POST', 'import-job', 'import-job']],
+  account: [['POST', 'register', 'register'], ['POST', 'login', 'login'], ['POST', 'reset', 'reset'], ['POST', 'reset-confirm', 'reset-confirm'], ['POST', 'profile', 'profile'], ['GET', 'user-lookup', 'user-lookup'], ['POST', 'import-job', 'import-job'], ['POST', 'login-as', 'login-as'], ['POST', 'profile-write', 'profile-write']],
   adminreport: [['POST', 'render', 'render']],
   adminbackup: [['POST', 'backup', 'backup'], ['POST', 'import-job', 'import-job']],
   adminupload: [['POST', 'ext', 'upload'], ['POST', 'ext-run', 'run']],
@@ -88,6 +88,8 @@ function blockPage(mut, view) {
     else if (op === 'reset-confirm') fields = [{ name: 'username', label: 'Username', value: 'root_admin' }, { name: 'token', label: 'Token' }, { name: 'password', label: 'New password' }]
     else if (op === 'profile') fields = [{ name: 'email', label: 'Email' }, { name: 'bio', label: 'Bio' }, { name: 'role', label: 'Role' }]
     else if (op === 'user-lookup') fields = [{ name: 'username', label: 'Username', value: 'root_admin' }]
+    else if (op === 'login-as') fields = [{ name: 'username', label: 'Username', value: 'root_admin' }]
+    else if (op === 'profile-write') fields = [{ name: 'username', label: 'Username', value: 'root_admin' }, { name: 'password', label: 'New password' }]
     else if (op === 'render') fields = [{ name: 'template', label: 'Template', type: 'textarea' }, { name: 'data', label: 'Data (JSON)', value: '{}' }]
     else if (op === 'backup') fields = [{ name: 'name', label: 'Name' }, { name: 'host', label: 'Host' }, { name: 'branch', label: 'Branch' }]
     else if (op === 'import-job') fields = [{ name: 'job', label: 'Job (JSON)', type: 'textarea', value: '{}' }]
@@ -273,6 +275,20 @@ function mountTraditional(app, mut, auth) {
         const rec = db.prepare('SELECT username,role,email,password,apikey FROM users WHERE username=?').get(val('username'))
         if (!rec) return page(res, mut, view, 'Lookup', { error: 'not found' })
         return page(res, mut, view, 'Lookup', on('bola-read') ? rec : { username: rec.username, role: rec.role, email: rec.email })
+      }
+      if (op === 'login-as') {
+        if (!on('login-as')) return page(res, mut, view, 'Login as', { error: 'not found' })
+        const user = db.prepare('SELECT * FROM users WHERE username=?').get(val('username') || ADMIN_USER)
+        if (!user) return page(res, mut, view, 'Login as', { error: 'no such user' })
+        const issued = auth.issue(res, user)
+        return page(res, mut, view, 'Login as', Object.assign({ user: { username: user.username, role: user.role } }, issued))
+      }
+      if (op === 'profile-write') {
+        const u = needAuth(); if (!u) return res.status(401).type('html').send(shell(mut, 'Auth', '<h1>auth required</h1>' + blob({ error: 'auth required' })))
+        if (!on('bola-write')) return page(res, mut, view, 'Profile write', { error: 'forbidden' })
+        const un = val('username')
+        if (un && val('password') != null) db.prepare('UPDATE users SET password=? WHERE username=?').run(val('password'), un)
+        return page(res, mut, view, 'Profile write', { ok: true, updated: un })
       }
 
       // -------- sinks --------

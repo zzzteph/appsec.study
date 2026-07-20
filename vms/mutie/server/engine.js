@@ -118,6 +118,39 @@ const PRIMITIVES = [
   { id: 'side-oversell', kind: 'side', blocks: ofKind('feature'), vuln: 'stock-oversell', variants: ['negative-qty', 'no-check'], req: [CAP.START], grants: [], w: 0.2 },
   { id: 'side-bfla', kind: 'side', blocks: ofKind('feature'), vuln: 'bfla', variants: ['no-admin-check'], req: [CAP.START], grants: [], w: 0.2 },
   { id: 'side-refresh-noop', kind: 'side', blocks: ofKind('account'), vuln: 'refresh-no-rotation', variants: ['reusable'], req: [CAP.START], grants: [], w: 0.15 },
+
+  // ---------- fleet-audit additions: new CHAIN primitives (grant ADMIN/ADMIN_CREDS) ----------
+  // impersonation / "login as" — an endpoint that mints a credential for ANY username with no admin
+  // check (graph/shoppy loginAs, nomnom/boxcutter auth-test). START -> ADMIN directly.
+  { id: 'login-as', kind: 'auth', blocks: ofKind('account'), vuln: 'impersonation', variants: ['no-check', 'debug-endpoint'], req: [CAP.START], grants: [CAP.ADMIN], w: 0.2 },
+  // BOLA write — profile/password update that trusts an attacker-supplied username and writes ANY user
+  // (graph/shoppy updateProfile). Needs a normal-user foothold; sets the admin password you then log in with.
+  { id: 'bola-write', kind: 'acquire', blocks: ofKind('account'), vuln: 'bola-write', variants: ['any-user-password'], req: [CAP.USER], grants: [CAP.ADMIN_CREDS], w: 0.2 },
+
+  // ---------- fleet-audit additions: side vulns (maze walls; grant nothing toward RCE) ----------
+  { id: 'side-cors', kind: 'side', blocks: ofKind('feature').concat(ofKind('account')), vuln: 'cors-misconfig', variants: ['reflect-origin'], req: [CAP.START], grants: [], w: 0.25 },
+  { id: 'side-host-header', kind: 'side', blocks: ofKind('account'), vuln: 'host-header-injection', variants: ['reset-link'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-cache-poison', kind: 'side', blocks: ofKind('feature'), vuln: 'web-cache-poisoning', variants: ['x-forwarded-host'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-cookie-flags', kind: 'side', blocks: ofKind('account'), vuln: 'insecure-cookie', variants: ['no-httponly'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-clickjack', kind: 'side', blocks: ofKind('feature'), vuln: 'clickjacking', variants: ['no-xfo'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-email-header', kind: 'side', blocks: ofKind('feature').concat(ofKind('content')), vuln: 'email-header-injection', variants: ['newline'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-redos', kind: 'side', blocks: ofKind('feature'), vuln: 'redos', variants: ['catastrophic'], req: [CAP.START], grants: [], w: 0.1 },
+  { id: 'side-csrf', kind: 'side', blocks: ofKind('account').concat(ofKind('feature')), vuln: 'csrf', variants: ['get-state-change'], req: [CAP.START], grants: [], w: 0.2 },
+  { id: 'side-xpath', kind: 'side', blocks: ofKind('content'), vuln: 'xpath-injection', variants: ['auth-bypass'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-ldap', kind: 'side', blocks: ofKind('content'), vuln: 'ldap-injection', variants: ['filter-bypass'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-nosql', kind: 'side', blocks: ofKind('account'), vuln: 'nosql-injection', variants: ['operator'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-excessive-data', kind: 'side', blocks: ofKind('feature'), vuln: 'excessive-data-exposure', variants: ['pan', 'pii'], req: [CAP.START], grants: [], w: 0.2 },
+  { id: 'side-cms-unauth', kind: 'side', blocks: ofKind('content'), vuln: 'broken-access-control', variants: ['unauth-edit'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-privesc-self', kind: 'side', blocks: ofKind('account'), vuln: 'privilege-escalation', variants: ['self-promote'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-refund-abuse', kind: 'side', blocks: ofKind('feature'), vuln: 'refund-abuse', variants: ['unbounded'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-status-abuse', kind: 'side', blocks: ofKind('feature'), vuln: 'order-status-abuse', variants: ['no-payment'], req: [CAP.START], grants: [], w: 0.15 },
+  { id: 'side-race', kind: 'side', blocks: ofKind('feature'), vuln: 'race-condition', variants: ['toctou'], req: [CAP.START], grants: [], w: 0.1 },
+  { id: 'side-giftcard-enum', kind: 'side', blocks: ofKind('feature'), vuln: 'giftcard-enumeration', variants: ['sequential'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-credit-transfer', kind: 'side', blocks: ofKind('feature'), vuln: 'credit-transfer-theft', variants: ['negative-amount'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-predictable-apikey', kind: 'side', blocks: ofKind('account'), vuln: 'predictable-apikey', variants: ['username-derived'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-dom-xss', kind: 'side', blocks: ofKind('content').concat(ofKind('feature')), vuln: 'dom-xss', variants: ['innerhtml', 'document-write'], req: [CAP.START], grants: [], w: 0.2 },
+  { id: 'side-rfi', kind: 'side', blocks: ofKind('webhook'), vuln: 'remote-file-include', variants: ['url-include'], req: [CAP.START], grants: [], w: 0.12 },
+  { id: 'side-header-trust', kind: 'side', blocks: ofKind('feature'), vuln: 'header-trust-bypass', variants: ['x-admin', 'x-forwarded-for'], req: [CAP.START], grants: [], w: 0.15 },
 ]
 
 // ---- presentation: per generation each block gets a randomized name/slug + one of several UI layout
