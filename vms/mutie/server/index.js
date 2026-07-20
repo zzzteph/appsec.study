@@ -6,6 +6,7 @@ const { makeAuth } = require('./authmodes')
 const { buildRouter } = require('./approuter')
 const { mountGraphQL } = require('./graphql')
 const { mountTraditional } = require('./traditional')
+const { mountRecon } = require('./recon')
 const internal = require('./internal')
 
 internal.start() // internal-only 127.0.0.1:9000 (reached via an active SSRF block)
@@ -48,6 +49,10 @@ app.get('/api/manifest', (q, s) => s.json({
     endpoints: funcs.filter(f => f.block === v.id).map(f => ({ m: f.m, p: f.p, kind: f.kind })),
   })),
 }))
+
+// recon / disclosure surface + decoys (robots.txt, sitemap.xml, /.git, /.env, /swagger, decoy APIs).
+// Seeded; mostly maze-wall decoys that grant nothing — mounted before the SPA fallback so they win.
+mountRecon(app, mut)
 
 // SPA is only served for the api transports that use it; traditional serves its own '/' (server-rendered)
 if (mut.api !== 'traditional') {
