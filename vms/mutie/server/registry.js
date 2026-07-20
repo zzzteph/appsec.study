@@ -44,6 +44,7 @@ function mountAll(router, mut, auth) {
     const add = (m, p, k) => funcs.push({ block: view.id, m, p, kind: k })
     const ctx = { router, base, on, variant, add, requireAdmin, requireAuth, store, view, __issue: (res, user) => auth.issue(res, user), __adminKey: () => auth.ADMIN_KEYFN() }
     ;(MOUNT[kind] || MOUNT.feature)(ctx)
+    mountExtras(ctx, kind)
   }
   return funcs
 }
@@ -419,6 +420,55 @@ function mountUpload(x, requireAdmin) {
   })
   add('POST', base + '/ext/:name/run', 'run')
 }
+// ---- benign functional surface: a universal /meta plus kind-appropriate real endpoints on EVERY
+// block (comments, tags, stats, sessions, jobs, changelog, …). These carry NO vulns — they exist to
+// make each block feel like a real app and to widen the backend surface a scanner must wade through.
+// New endpoint `kind`s the blind solver doesn't look for, so they never affect the 40/40 guarantee.
+function mountExtras(x, kind) {
+  const { router, base, add, view, requireAuth } = x
+  const seedNum = String(view.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  router.get(base + '/meta', (q, s) => s.json({ id: view.id, app: view.app, kind, title: view.title, slug: view.slug, uiVariant: view.uiVariant }))
+  add('GET', base + '/meta', 'meta')
+
+  if (kind === 'content') {
+    const comments = x.store(view.id + ':comments')
+    if (!comments.length) comments.push({ id: 1, user: 'alice', text: 'Nice one!' }, { id: 2, user: 'bob', text: 'Thanks for sharing.' })
+    router.get(base + '/comments', (q, s) => s.json(comments)); add('GET', base + '/comments', 'comments')
+    router.post(base + '/comments', (q, s) => { comments.push({ id: comments.length + 1, user: esc((q.body && q.body.user) || 'guest'), text: esc((q.body && q.body.text) || '') }); s.json({ ok: true }) })
+    add('POST', base + '/comments', 'comment-add')
+    router.get(base + '/tags', (q, s) => s.json(['news', 'featured', 'popular', 'editor-pick', 'trending', view.app].map((t, i) => ({ tag: t, count: 3 + (i * 7 % 20) })))); add('GET', base + '/tags', 'tags')
+    router.get(base + '/related', (q, s) => s.json(db.prepare('SELECT id,name,category,price FROM products WHERE id % 3 = ? LIMIT 6').all(seedNum % 3))); add('GET', base + '/related', 'related')
+  } else if (kind === 'feature') {
+    router.get(base + '/stats', (q, s) => s.json({ views: 1000 + seedNum, likes: seedNum % 300, shares: seedNum % 40 })); add('GET', base + '/stats', 'stats')
+    router.get(base + '/activity', (q, s) => s.json([{ ts: 't-1', who: 'alice', what: 'updated' }, { ts: 't-2', who: 'bob', what: 'commented' }])); add('GET', base + '/activity', 'activity')
+    const favs = x.store(view.id + ':favs')
+    router.post(base + '/favorite/:id', (q, s) => { const id = Number(q.params.id); const i = favs.indexOf(id); i >= 0 ? favs.splice(i, 1) : favs.push(id); s.json({ ok: true, favorited: favs.includes(id) }) })
+    add('POST', base + '/favorite/:id', 'favorite')
+  } else if (kind === 'account') {
+    router.get(base + '/sessions', requireAuth, (q, s) => s.json([{ id: 's1', ua: 'Chrome', ip: '10.0.0.5', current: true }, { id: 's2', ua: 'Safari', ip: '10.0.0.9' }])); add('GET', base + '/sessions', 'sessions')
+    router.get(base + '/activity', requireAuth, (q, s) => s.json([{ ts: 't-1', event: 'login', ip: '10.0.0.5' }, { ts: 't-2', event: 'password-change' }])); add('GET', base + '/activity', 'activity')
+  } else if (kind === 'webhook') {
+    router.get(base + '/deliveries', (q, s) => s.json([{ id: 1, url: 'https://example.com/hook', status: 200 }, { id: 2, url: 'https://example.com/hook2', status: 500 }])); add('GET', base + '/deliveries', 'deliveries')
+  } else if (kind === 'disclosure') {
+    router.get(base + '/changelog', (q, s) => s.json([{ v: '1.2.0', notes: 'new endpoints' }, { v: '1.1.0', notes: 'bugfixes' }])); add('GET', base + '/changelog', 'changelog')
+    router.get(base + '/health', (q, s) => s.json({ status: 'ok', uptime: seedNum })); add('GET', base + '/health', 'health')
+  } else if (kind === 'fileportal') {
+    router.get(base + '/files', (q, s) => s.json(['welcome.txt', 'readme.md', 'notes.txt'].map((n, i) => ({ name: n, size: 100 + i * 50 })))); add('GET', base + '/files', 'files')
+    router.get(base + '/recent', (q, s) => s.json([{ name: 'welcome.txt', at: 't-1' }])); add('GET', base + '/recent', 'recent')
+  } else if (kind === 'adminreport') {
+    router.get(base + '/templates', (q, s) => s.json(['weekly', 'monthly', 'incident'].map((t, i) => ({ id: i + 1, name: t })))); add('GET', base + '/templates', 'templates')
+    router.get(base + '/schedule', (q, s) => s.json([{ id: 1, cron: '0 9 * * 1', report: 'weekly' }])); add('GET', base + '/schedule', 'schedule')
+  } else if (kind === 'adminbackup') {
+    router.get(base + '/jobs', (q, s) => s.json([{ id: 1, name: 'nightly', status: 'ok' }, { id: 2, name: 'weekly', status: 'queued' }])); add('GET', base + '/jobs', 'jobs')
+    router.get(base + '/history', (q, s) => s.json([{ id: 1, at: 't-1', size: '4.2MB' }])); add('GET', base + '/history', 'history')
+  } else if (kind === 'import') {
+    router.get(base + '/history', (q, s) => s.json([{ id: 1, file: 'invoices.xml', rows: 12 }])); add('GET', base + '/history', 'history')
+    router.get(base + '/mappings', (q, s) => s.json([{ from: 'ref', to: 'reference' }, { from: 'amount', to: 'total' }])); add('GET', base + '/mappings', 'mappings')
+  } else if (kind === 'adminupload') {
+    router.get(base + '/installed', (q, s) => s.json([{ name: 'core', version: '1.0' }, { name: 'analytics', version: '2.1' }])); add('GET', base + '/installed', 'installed')
+  }
+}
+
 function mountDeserial(x, requireAdmin) {
   const { router, base, on, variant, add } = x
   router.post(base + '/import-job', requireAdmin, (q, s) => {
