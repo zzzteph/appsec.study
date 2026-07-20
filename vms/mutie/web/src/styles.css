@@ -122,3 +122,60 @@ table.data tr:hover td { background: #f7f9fc; }
   .feed { grid-template-columns: 1fr; }
   .feed .rail { order: 2; }
 }
+
+/* ============================================================================
+   SKINS — 16 Material palettes scoped to a block root (`.block.skin-<id>`). The app chrome
+   (appbar/drawer) keeps the default indigo :root; only block CONTENT is re-skinned, and the skin is a
+   pure function of the view identity (never of the vulns inside), so appearance stays decoupled.
+   ============================================================================ */
+:root { --accent-soft: #fce4ec; }
+.block { --primary: #3f51b5; --primary-d: #303f9f; --accent: #ff4081; --accent-soft: #fce4ec; }
+.skin-indigo  { --primary:#3f51b5; --primary-d:#303f9f; --accent:#ff4081; --accent-soft:#fce4ec; }
+.skin-teal    { --primary:#00897b; --primary-d:#00695c; --accent:#ff7043; --accent-soft:#ffe0d6; }
+.skin-rose    { --primary:#e91e63; --primary-d:#c2185b; --accent:#7c4dff; --accent-soft:#ede7f6; }
+.skin-amber   { --primary:#ff8f00; --primary-d:#ff6f00; --accent:#6d4c41; --accent-soft:#efebe9; }
+.skin-slate   { --primary:#455a64; --primary-d:#37474f; --accent:#26a69a; --accent-soft:#d7f2ee; }
+.skin-emerald { --primary:#2e7d32; --primary-d:#1b5e20; --accent:#ffb300; --accent-soft:#fff3d6; }
+.skin-violet  { --primary:#6a1b9a; --primary-d:#4a148c; --accent:#26c6da; --accent-soft:#d6f5fa; }
+.skin-crimson { --primary:#c62828; --primary-d:#b71c1c; --accent:#ff8f00; --accent-soft:#ffecc7; }
+.skin-ocean   { --primary:#0277bd; --primary-d:#01579b; --accent:#26a69a; --accent-soft:#d3efeb; }
+.skin-forest  { --primary:#33691e; --primary-d:#1b5e20; --accent:#ff7043; --accent-soft:#ffe0d6; }
+.skin-sunset  { --primary:#ef6c00; --primary-d:#e65100; --accent:#d81b60; --accent-soft:#fbd6e4; }
+.skin-mono    { --primary:#424242; --primary-d:#212121; --accent:#757575; --accent-soft:#eeeeee; }
+.skin-midnight{ --primary:#283593; --primary-d:#1a237e; --accent:#00b0ff; --accent-soft:#cdefff; }
+.skin-coral   { --primary:#ff5252; --primary-d:#ff1744; --accent:#536dfe; --accent-soft:#e2e6ff; }
+.skin-steel   { --primary:#546e7a; --primary-d:#37474f; --accent:#90a4ae; --accent-soft:#eceff1; }
+.skin-lime    { --primary:#689f38; --primary-d:#558b2f; --accent:#f4511e; --accent-soft:#ffe0d6; }
+.block .section-title { color: var(--primary-d); }
+
+/* ============================================================================
+   WIDGETS — 12 collection render styles. Any collection wrapped in `.coll <widget>` responds; the
+   template drops its items as direct children and the widget decides the arrangement.
+   ============================================================================ */
+.coll { display: grid; gap: 1rem; }
+.coll.cards   { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.coll.grid    { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .8rem; }
+.coll.gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
+.coll.tiles   { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.coll.list    { display: block; }
+.coll.list > * { display: block; margin-bottom: .5rem; }
+.coll.compact { display: block; }
+.coll.compact > * { display: flex; align-items: center; gap: .5rem; padding: .35rem .6rem; border-bottom: 1px solid var(--line); }
+.coll.feed    { display: block; max-width: 640px; margin: 0 auto; }
+.coll.feed > * { display: block; margin-bottom: 1rem; }
+.coll.table   { display: table; width: 100%; }
+.coll.table > * { display: table-row; }
+.coll.masonry { display: block; column-count: 3; column-gap: 1rem; }
+.coll.masonry > * { break-inside: avoid; margin-bottom: 1rem; display: block; }
+.coll.carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .5rem; }
+.coll.carousel > * { flex: 0 0 220px; scroll-snap-align: start; }
+.coll.kanban  { display: flex; gap: 1rem; overflow-x: auto; align-items: flex-start; }
+.coll.kanban > * { flex: 0 0 240px; }
+.coll.timeline { display: block; border-left: 3px solid var(--accent); padding-left: 1rem; margin-left: .5rem; }
+.coll.timeline > * { display: block; position: relative; margin-bottom: 1rem; }
+.coll.timeline > *::before { content: ''; position: absolute; left: -1.42rem; top: .6rem; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+@media (max-width: 800px) { .coll.masonry { column-count: 2; } }
+@media (max-width: 520px) { .coll.masonry { column-count: 1; } }
+
+/* buttons/accents re-read the skin vars automatically since they use var(--primary/--accent) */
+.chip.kick { background: var(--accent-soft); color: var(--primary-d); }

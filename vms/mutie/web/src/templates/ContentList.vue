@@ -43,6 +43,12 @@ async function compose() {
 const priceFor = (it) => it.price != null ? '$' + Number(it.price).toFixed(2) : ''
 const stars = (r) => '★★★★★'.slice(0, Math.round(r || 0)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(r || 0))
 
+// blog/feed layouts render `posts`; before anyone has composed, fall back to the catalog so the view
+// is never empty (the stored-xss surface still lives on real /posts submissions).
+const feed = computed(() => posts.value.length
+  ? posts.value
+  : items.value.map(it => ({ id: it.id, title: it.name || it.title, body: (it.category || '') + ' · ' + priceFor(it) })))
+
 onMounted(refresh)
 </script>
 
@@ -76,8 +82,8 @@ onMounted(refresh)
     <div class="grid feed-blog">
       <div class="card mainc">
         <div class="pad"><h2>Latest posts</h2></div>
-        <div class="pad" v-if="!posts.length">No posts yet — be the first.</div>
-        <article class="pad post-blog" v-for="p in posts" :key="p.id">
+        <div class="pad" v-if="!feed.length">No posts yet — be the first.</div>
+        <article class="pad post-blog" v-for="p in feed" :key="p.id">
           <h3>{{ p.title }}</h3>
           <p v-html="p.body"></p>
         </article>
@@ -141,7 +147,7 @@ onMounted(refresh)
   </div>
 
   <!-- layout 4 : social-feed style two-column -->
-  <div v-else>
+  <div v-else-if="layout === 4">
     <div class="grid feed">
       <div class="card sidec pad rail">
         <h3>Post something</h3>
@@ -152,13 +158,13 @@ onMounted(refresh)
         <input class="field" v-model="q" @keyup.enter="search" />
       </div>
       <div>
-        <div class="card post" v-for="p in posts" :key="p.id">
+        <div class="card post" v-for="p in feed" :key="p.id">
           <div class="head"><img :src="avatar(p.title || ('user' + p.id))" /><div><div class="who">{{ p.title || 'anon' }}</div><div class="muted" style="font-size:.75rem">{{ view.title }}</div></div></div>
           <div class="body" v-html="p.body"></div>
           <div class="photo" v-if="p.id % 3 === 0"><img :src="photo(runId + '-p-' + p.id, 800, 340)" /></div>
           <div class="actions"><span>❤️ like</span><span>💬 comment</span><span>↗ share</span></div>
         </div>
-        <div class="card pad" v-if="!posts.length">No posts yet.</div>
+        <div class="card pad" v-if="!feed.length">No posts yet.</div>
         <div class="card pad" v-if="searchResults && searchResults.length" style="margin-top:1rem">
           <b>Search results</b>
           <div class="chip" v-for="r in searchResults" :key="r.id">{{ r.name }}</div>
@@ -166,6 +172,44 @@ onMounted(refresh)
         <pre v-if="err" class="err">{{ err }}</pre>
       </div>
     </div>
+  </div>
+
+  <!-- layout 5 : magazine — masonry of the catalog -->
+  <div v-else-if="layout === 5">
+    <div class="row search"><input class="field" v-model="q" @keyup.enter="search" placeholder="Search…" /><button class="btn" @click="search">Search</button></div>
+    <div class="coll masonry">
+      <div class="card" v-for="it in (searchResults && searchResults.length ? searchResults : items)" :key="it.id">
+        <img :src="photo(runId + '-m-' + it.id, 400, 260)" style="width:100%;object-fit:cover" />
+        <div class="pad"><b>{{ it.name || it.title }}</b><div class="muted">{{ it.category }} {{ priceFor(it) }}</div></div>
+      </div>
+    </div>
+    <pre v-if="err" class="err">{{ err }}</pre>
+  </div>
+
+  <!-- layout 6 : widget-driven catalog collection -->
+  <div v-else-if="layout === 6">
+    <div class="row search"><input class="field" v-model="q" @keyup.enter="search" placeholder="Search…" /><button class="btn accent" @click="search">Go</button></div>
+    <div class="coll" :class="widget">
+      <div class="card" v-for="it in (searchResults && searchResults.length ? searchResults : items)" :key="it.id">
+        <img v-if="['cards','tiles','gallery','grid','masonry','carousel','feed'].includes(widget)" :src="photo(runId + '-c-' + it.id, 320, 180)" style="width:100%;height:120px;object-fit:cover" />
+        <div class="pad" style="padding:.5rem .7rem"><b>{{ it.name || it.title }}</b> <span class="chip cat">{{ it.category }}</span> <span class="price">{{ priceFor(it) }}</span></div>
+      </div>
+    </div>
+    <pre v-if="err" class="err">{{ err }}</pre>
+  </div>
+
+  <!-- layout 7 : compact wiki/table -->
+  <div v-else>
+    <div class="card pad"><div class="row"><input class="field" v-model="q" @keyup.enter="search" placeholder="Filter…" /><button class="btn flat" @click="search">Filter</button></div></div>
+    <div class="card" style="margin-top:1rem">
+      <table class="data">
+        <thead><tr><th>#</th><th>Name</th><th>Category</th><th>Price</th><th>Rating</th></tr></thead>
+        <tbody>
+          <tr v-for="it in (searchResults && searchResults.length ? searchResults : items)" :key="it.id"><td>{{ it.id }}</td><td><b>{{ it.name || it.title }}</b></td><td>{{ it.category }}</td><td>{{ priceFor(it) }}</td><td class="stars">{{ stars(it.rating) }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre v-if="err" class="err">{{ err }}</pre>
   </div>
 </div>
 </template>

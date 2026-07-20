@@ -35,8 +35,10 @@ function go(id) { selected.value = id; drawerOpen.value = false; window.scrollTo
 
 onMounted(async () => {
   await load()
-  // default to the first non-admin content-y block if there is one
-  const first = state.views.find(v => !v.admin) || state.views[0]
+  // land on a visual, content-rich block (catalog/feed) rather than a login form when possible
+  const pref = ['content', 'feature', 'fileportal', 'webhook', 'disclosure']
+  const first = pref.map(k => state.views.find(v => !v.admin && v.kind === k)).find(Boolean)
+    || state.views.find(v => !v.admin) || state.views[0]
   if (first) selected.value = first.id
 })
 </script>
