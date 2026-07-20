@@ -238,11 +238,25 @@ function generate(opts = {}) {
   // 2) random extra feature blocks
   for (const b of BLOCKS) if (!active.has(b.id) && RNG() < 0.5) active.add(b.id)
 
-  // 3) noise: extra primitives (incl. side vulns / maze walls) whose host block is active
-  for (const p of avail) {
-    if (enabledIds.has(p.id)) continue
-    const hosts = p.blocks.filter(b => active.has(b))
-    if (hosts.length && RNG() < p.w) { enabledIds.add(p.id); placements.push({ block: pick(hosts), prim: p.id, variant: chooseVariant(p), solution: false }) }
+  // 3) DENSITY: spread vulns across MANY active hosts so a single machine exposes lots of live vulns
+  //    (target 50+ placements/gen; the fleet used to show only ~10-16). Route-mounting / behaviour-
+  //    changing primitives (acquire / sink / side + the account ones) get MULTIPLE instances across
+  //    distinct host blocks — the same bug class recurring in many features, like a real app. Pure
+  //    auth-model weaknesses (jwt-*, session-*, apikey-leak, remember-me) are resolved GLOBALLY in
+  //    authmodes, so extra copies add no surface — they get a low spread. Everything is still a pure
+  //    function of the seed, and ADDING instances can never reduce reachability, so the guarantee holds.
+  const placedKey = new Set(placements.map(pl => pl.block + '|' + pl.prim))
+  const GLOBAL_AUTH = new Set(['jwt-forge', 'jwt-algnone', 'jwt-weak-secret', 'session-predict', 'session-file', 'apikey-leak', 'remember-me'])
+  const spreadOf = (p) => GLOBAL_AUTH.has(p.id) ? 1 : (p.kind === 'side' ? 7 : (p.kind === 'acquire' || p.kind === 'sink' ? 5 : 3))
+  for (const p of shuffle(avail)) {
+    const hosts = shuffle(p.blocks.filter(b => active.has(b) && !placedKey.has(b + '|' + p.id)))
+    if (!hosts.length) continue
+    const cap = spreadOf(p)
+    let n = 0
+    for (const h of hosts) {
+      if (n >= cap) break
+      if (RNG() < p.w) { enabledIds.add(p.id); placements.push({ block: h, prim: p.id, variant: chooseVariant(p), solution: false }); placedKey.add(h + '|' + p.id); n++ }
+    }
   }
 
   // 4) validate: RCE reachable using ONLY enabled primitives
