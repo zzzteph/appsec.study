@@ -1,0 +1,5 @@
+node_modules/
+tools/__pycache__/
+server/ext/
+server/sessions.json
+*.log
