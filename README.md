@@ -19,6 +19,14 @@ Every machine is automatically restarted **every 2 hours** (on even hours, local
 | **graph** | Vue + GraphQL (Apollo) shop, JWT access/refresh: pervasive BOLA/IDOR, invite-IDOR, hidden `recentUsers`, GraphQL SQLi, path traversal, mass-assignment, weak/leaked reset, price-tamper, option-price abuse, stored XSS (reviews/CMS), unauth CMS mutation, enumeration | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/graph) | [graph.appsec.study](https://graph.appsec.study) |
 | **lstalker** (variant of [Stalker](https://github.com/zzzteph/appsec.study/tree/main/vms/Stalker)) | SQL injection → **cleartext** credential disclosure → hidden admin panel → `eval` RCE. No `.git` — content-discovery instead of Git recovery | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/lstalker) | [lstalker.appsec.study](https://lstalker.appsec.study) |
 | **shoppy** (REST twin of [graph](https://github.com/zzzteph/appsec.study/tree/main/vms/graph)) | Same shop, **full REST API** (Express) + JWT access/refresh: BOLA/IDOR, SQLi, path traversal, mass-assignment, price/coupon/refund/credits abuse, SSRF, file upload, stored XSS, impersonation, verbose errors | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/shoppy) | [shoppy.appsec.study](https://shoppy.appsec.study) |
+| **refreshy** | Vue + Node/Express social feed; the point is the **2-min JWT access token + refresh** flow (authorization-session testing). Stored XSS (posts/comments), SQLi (search), BOLA (edit/delete any user's post) | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/refreshy) | [refreshy.appsec.study](https://refreshy.appsec.study) |
+| **ghost** | Vue + Node/Express order-management for shops; the point is **code-splitting** — the API client + dashboard load in a chunk only *after* login, so the API surface is invisible to an unauthenticated crawler. **Multiple BOLA** on every by-id endpoint (orders read/approve/deliver/decline, invoices, inventory edit/delete, shop stats). `demo/demo` on the landing page | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/ghost) | [ghost.appsec.study](https://ghost.appsec.study) |
+| **latty-1** | Vue + Node/Express blog that is a **lateral-movement chain to RCE**: SQLi (search, UNION) → **cleartext** credential dump → admin login → invoice/report generator **SSTI → RCE**. Each stage gates the next | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/latty-1) | [latty1.appsec.study](https://latty1.appsec.study) |
+| **latty-2** | Vue + Node/Express ops "request tester"; **lateral-movement chain via SSRF**: full-SSRF fetch → **internal-only** microservice on `127.0.0.1:9000` (unpublished) → localhost-trusted task token → `run-task` **command execution → RCE**. `demo/demo` | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/latty-2) | [latty2.appsec.study](https://latty2.appsec.study) |
+| **latty-3** | Vue + Node/Express contact-import + backup console; **lateral-movement chain via XXE**: XXE (external entity, `libxmljs2`) reads service config → leaked creds → **password reuse** into admin console → backup **command injection → RCE** | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/latty-3) | [latty3.appsec.study](https://latty3.appsec.study) |
+| **latty-4** | Vue + Node/Express projects dashboard + report builder; **lateral-movement chain via IDOR**: `GET /projects/:id` IDOR leaks another tenant's **API key** (with `reports` scope) → report builder **EJS SSTI → RCE**. `demo/demo` | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/latty-4) | [latty4.appsec.study](https://latty4.appsec.study) |
+| **latty-5** | Vue + Node/Express docs portal + extension console; **lateral-movement chain via LFI**: path-traversal (`?file=../…`) leaks the **HS256 JWT secret** → forge `role:admin` token → **unrestricted `.js` upload** → `require()`-and-run **webshell → RCE** | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/latty-5) | [latty5.appsec.study](https://latty5.appsec.study) |
+| **mutie** | **Self-mutating** app (Vue Material Design + Node/Express): assembled from ~38 feature blocks across admin/partner/shop/social, a random subset live each restart with a random subset of vulns (SQLi/LFI/XXE/SSRF/SSTI/cmd-inj/upload/IDOR/XSS/…). `GET /api/manifest` shows live routes but not which bugs are on — you fingerprint. Generator **always guarantees ≥1 chain to RCE** (creds/forge/ssrf); re-mutates on restart | [source](https://github.com/zzzteph/appsec.study/tree/main/vms/mutie) | [mutie.appsec.study](https://mutie.appsec.study) |
 
 ## Scanner coverage
 
@@ -37,5 +45,13 @@ Planted vulnerabilities each scanner discovered (valid findings / total embedded
 | graph | — |
 | lstalker | — |
 | shoppy | — |
+| refreshy | — |
+| ghost | — |
+| latty-1 | — |
+| latty-2 | — |
+| latty-3 | — |
+| latty-4 | — |
+| latty-5 | — |
+| mutie | — |
 
 
