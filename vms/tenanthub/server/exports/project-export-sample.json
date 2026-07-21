@@ -1,0 +1,9 @@
+{
+  "type": "tenanthub.project.export",
+  "version": "3",
+  "project": { "name": "Website Redesign", "description": "Marketing site refresh" },
+  "tickets": [
+    { "title": "Update hero section", "status": "open" },
+    { "title": "Fix mobile nav", "status": "in_progress" }
+  ]
+}

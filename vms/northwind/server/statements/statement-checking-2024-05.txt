@@ -1,0 +1,11 @@
+NORTHWIND BANK — Account Statement
+Account: Everyday Checking ****4021
+Period: 01 May 2024 – 31 May 2024
+------------------------------------------------------------
+Opening balance:                                 1,180.20 USD
+Total deposits:                                    900.00 USD
+Total withdrawals:                                -839.65 USD
+------------------------------------------------------------
+Closing balance:                                 1,240.55 USD
+
+Northwind Bank, Member FDIC. Questions? support@northwind.bank
