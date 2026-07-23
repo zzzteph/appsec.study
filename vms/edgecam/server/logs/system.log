@@ -1,0 +1,11 @@
+2024-05-18 03:12:04 [info] netcam: system boot, firmware NVR-2000 v3.8.1
+2024-05-18 03:12:05 [info] netcam: eth0 link up 1000Mb/s, dhcp lease 10.20.4.17
+2024-05-18 03:12:06 [info] rtspd: RTSP service listening on 554
+2024-05-18 03:12:07 [info] camd: 8 channels registered, 6 online
+2024-05-18 03:14:22 [warn] camd: channel 4 (Loading Dock) stream timeout, retrying
+2024-05-18 03:14:25 [info] camd: channel 4 recovered
+2024-05-18 06:41:10 [info] authd: admin logged in from 10.20.4.9
+2024-05-18 06:47:53 [warn] authd: 3 failed login attempts for 'operator' from 10.20.4.55
+2024-05-18 09:03:31 [info] storaged: disk usage 58% (1.7TB/3.0TB)
+2024-05-18 09:03:31 [info] storaged: recording retention window 14 days
+2024-05-18 22:15:02 [notice] updated: firmware check scheduled (auto-update disabled)

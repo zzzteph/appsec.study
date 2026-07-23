@@ -1,0 +1,23 @@
+const express = require('express')
+const cors = require('cors')
+const http = require('http')
+const path = require('path')
+require('./db')
+const { attach } = require('./ws')
+
+const app = express()
+app.disable('x-powered-by')
+app.use(cors())
+app.use(express.json({ limit: '1mb' }))
+app.set('trust proxy', true)
+app.use('/api', require('./routes'))
+app.get('/api/version', (req, res) => res.json({ name: 'Streamline', product: 'Realtime Collaboration', version: '2.3.0', node: process.version }))
+app.get('/healthz', (req, res) => res.json({ ok: true }))
+app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }))
+app.use(express.static(path.join(__dirname, 'public')))
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')))
+app.use((err, req, res, next) => res.status(500).json({ error: err.message }))
+
+const server = http.createServer(app)
+attach(server)   // WebSocket at /ws
+server.listen(80, () => console.log('Streamline on :80 (http + ws)'))

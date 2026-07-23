@@ -1,0 +1,11 @@
+Paystream — Payslip
+Employee: Demo Employee  ·  ID: EMP-1001
+Pay period: May 2024
+------------------------------------------------------------
+Gross pay:                                     6,250.00 USD
+Tax withheld:                                 -1,480.00 USD
+Benefits:                                       -320.00 USD
+------------------------------------------------------------
+Net pay:                                       4,450.00 USD
+
+Paystream HR. Questions? hr@paystream.test

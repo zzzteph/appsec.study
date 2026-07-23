@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NetGuard NG-500 — Appliance Console</title>
+<style>
+  :root{--bg:#0e1116;--panel:#161b22;--line:#242b36;--ink:#d7dde6;--mut:#8a93a2;--brand:#2f9e6e;--brand2:#39c08a;--warn:#e0a13a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Tahoma,Arial,sans-serif;font-size:14px}
+  header{background:linear-gradient(90deg,#12331f,#0e1116);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:12px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em}
+  .logo .b{width:24px;height:24px;border-radius:5px;background:linear-gradient(135deg,var(--brand),var(--brand2))}
+  .tag{margin-left:auto;color:var(--mut);font-size:12px}
+  .wrap{max-width:960px;margin:26px auto;padding:0 20px;display:grid;grid-template-columns:220px 1fr;gap:20px}
+  .side{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .side a{display:block;color:var(--ink);text-decoration:none;padding:9px 11px;border-radius:7px;font-weight:600}
+  .side a.active,.side a:hover{background:#1d2530;color:#fff}
+  .side .grp{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:12px 8px 4px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
+  h1{font-size:20px;margin:0 0 4px}
+  h2{font-size:15px;margin:0 0 12px}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:7px 14px;font-size:13.5px}
+  .kv div:nth-child(odd){color:var(--mut)}
+  .ok{color:var(--brand2);font-weight:700}
+  .warn{color:var(--warn)}
+  pre{background:#0b0e13;border:1px solid var(--line);border-radius:8px;padding:12px;color:#b9c2cf;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;white-space:pre-wrap;max-height:280px;overflow:auto}
+  button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:8px 14px;background:var(--brand);color:#fff;font-weight:700}
+  .foot{max-width:960px;margin:0 auto 30px;padding:0 20px;color:var(--mut);font-size:12px}
+  input{background:#0b0e13;border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:8px 10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="b"></span> NetGuard NG-500</div>
+  <span class="tag">firmware 2.1.4-legacy · appliance console</span>
+</header>
+<div class="wrap">
+  <nav class="side">
+    <div class="grp">Monitor</div>
+    <a class="active" href="#">Dashboard</a>
+    <a href="#" onclick="loadStatus();return false">System status</a>
+    <a href="#" onclick="loadHealth();return false">Health check</a>
+    <div class="grp">Network</div>
+    <a href="#">Interfaces</a>
+    <a href="#">VPN tunnels</a>
+    <a href="#">Routing</a>
+    <div class="grp">System</div>
+    <a href="#">Firmware</a>
+    <a href="#">Administrators</a>
+    <a href="#">Logs</a>
+  </nav>
+  <main>
+    <div class="card">
+      <h1>Appliance dashboard</h1>
+      <div class="kv">
+        <div>Model</div><div>NG-500</div>
+        <div>Firmware</div><div>2.1.4-legacy (build 20140801)</div>
+        <div>WAN link</div><div class="ok">up — 192.0.2.10</div>
+        <div>VPN tunnels</div><div>3 active</div>
+        <div>Health</div><div class="ok">OK</div>
+        <div>Last reboot</div><div>7 days ago</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Live system status</h2>
+      <p style="color:var(--mut);margin-top:0">Pulled from the on-box status service (<code>/cgi-bin/status.cgi</code>).</p>
+      <button onclick="loadStatus()">Refresh status</button>
+      <pre id="out">Click “Refresh status”.</pre>
+    </div>
+  </main>
+</div>
+<div class="foot">© 2014 NetGuard Systems. Unauthorized access is prohibited. Support: support@netguard.example</div>
+<script>
+function show(t){document.getElementById('out').textContent=t}
+function loadStatus(){show('Loading…');fetch('/cgi-bin/status.cgi').then(r=>r.text()).then(show).catch(e=>show('error: '+e))}
+function loadHealth(){show('Loading…');fetch('/cgi-bin/healthcheck.cgi').then(r=>r.text()).then(show).catch(e=>show('error: '+e))}
+</script>
+</body>
+</html>

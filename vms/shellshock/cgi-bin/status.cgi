@@ -1,0 +1,11 @@
+#!/usr/local/bin/bash43
+echo "Content-Type: text/plain"
+echo ""
+echo "NetGuard VPN Appliance — System Status"
+echo "======================================"
+echo "model      : NG-500"
+echo "firmware   : 2.1.4-legacy (build 20140801)"
+echo "uptime     :$(uptime 2>/dev/null | sed 's/.*up/ up/')"
+echo "vpn tunnels: 3 active"
+echo "wan link   : up (192.0.2.10)"
+echo "status     : OK"

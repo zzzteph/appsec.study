@@ -1,0 +1,4 @@
+The Range — public documents
+
+This directory serves publicly downloadable range documents.
+See challenge notes in the dashboard for how the document viewer is used.

@@ -1,0 +1,1 @@
+{ "name": "Sample workflow export", "version": 1, "steps": ["trigger", "notify"] }

@@ -1,0 +1,12 @@
+MobiCare — Monthly Bill
+Line: +1-555-0100  ·  Plan: Unlimited 5G
+Period: 01 May 2024 – 31 May 2024
+------------------------------------------------------------
+Plan charge:                                     45.00 USD
+Data add-ons:                                    10.00 USD
+Roaming:                                          0.00 USD
+Taxes & fees:                                     6.20 USD
+------------------------------------------------------------
+Total due:                                       61.20 USD  (due 15 Jun)
+
+MobiCare. Manage your line at my.mobicare.test  ·  support@mobicare.test

@@ -1,0 +1,14 @@
+{
+  "name": "xmlgov",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.10",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "xpath": "^0.0.34"
+  }
+}
